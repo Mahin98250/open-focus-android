@@ -2,7 +2,7 @@
 
 This project aims for broad feature parity in user value and workflows with established digital-wellbeing tools, while retaining an original brand, original design and independently written implementation. It does not copy another app's source code or protected assets.
 
-**Status definitions:** Planned = requirements identified; In progress = implementation exists but is incomplete; Implemented = code reviewed; Tested = automated checks and relevant Android-device verification passed; Preview only = browser prototype demonstrates intended interaction, not native Android functionality.
+**Status definitions:** Planned = requirements identified; In progress = implementation exists but is incomplete or not yet verified; Implemented = code reviewed; Tested = automated checks and relevant Android-device verification passed; Preview only = browser prototype demonstrates intended interaction, not native Android functionality.
 
 The web preview is a product-design review surface. It cannot validate Android system permissions, usage access, accessibility services, VPN behaviour, background execution or actual app blocking.
 
@@ -10,22 +10,22 @@ The web preview is a product-design review surface. It cannot validate Android s
 
 | Screen | Intended experience | Status | Acceptance evidence |
 |---|---|---|---|
-| Welcome / onboarding | Animated, accessible introduction; explain value and privacy; setup choices | Preview only | Native onboarding tested on small/large screens; skip, back and resume work |
-| Overview | Dashboard, focus CTA, daily summary, next tasks and progress | Preview only | Real data, loading/empty/error states and responsive UI tested |
+| Welcome / onboarding | Animated, accessible introduction; explain value and privacy; setup choices | In progress | Native onboarding tested on small/large screens; skip and resume; reduced-motion check |
+| Overview | Dashboard, focus CTA, daily summary, next tasks and progress | In progress | Real data, loading/empty/error states, responsive UI and accessibility tests |
 | Focus room | Pomodoro, configurable durations, breaks, intention and session controls | In progress | Timer unit tests; lifecycle, process death, reboot and notification tests |
-| App garden | App picker, selected apps, categories, schedules and exceptions | Planned | Permission flow and real block/unblock tests |
-| Schedules | Recurring days, time windows, exceptions and conflict handling | Preview only | Time-zone, daylight-saving, reboot and overlapping schedule tests |
-| Insights | Daily/weekly usage, focus history, trends and app breakdown | Preview only | Usage access, aggregation correctness and export tests |
-| Planner | Tasks, priorities, routines, goals and reminders | Preview only | Persistence, recurrence, notifications and accessibility tests |
-| Growth & rewards | Streaks, milestones and transparent progress | Preview only | Deterministic rules, time-zone edge cases and non-manipulative mechanics |
-| Settings | Theme, motion, privacy, permissions, export, deletion and about | Preview only | Data export/deletion and permission-revocation tests |
+| App garden | Installed-app picker, selected packages, permission disclosure and block controls | In progress | App visibility, affirmative disclosure, service enable/disable, overlay and manufacturer tests |
+| Schedules | Recurring days, time windows, exceptions and conflict handling | Planned | Time-zone, daylight-saving, reboot and overlapping schedule tests |
+| Insights | Daily/weekly usage, focus history, trends and app breakdown | Planned | Usage access, aggregation correctness, local retention and export tests |
+| Planner | Local tasks, priorities, routines, goals and reminders | In progress | Persistence and CRUD tests; recurrence, notifications and accessibility tests |
+| Growth & rewards | Streaks, milestones and transparent progress | Planned | Deterministic rules, time-zone edge cases and non-manipulative mechanics |
+| Settings | Theme, motion, privacy, permissions, export, deletion and about | In progress | Data export/deletion and permission-revocation tests |
 
 ## Blocking and digital wellbeing
 
 | Capability | Status | Android constraints / acceptance |
 |---|---|---|
-| Select Instagram, Snapchat, YouTube and other apps | Preview only | Native picker must respect installed-app visibility rules and disclose selection |
-| Block selected apps during focus | Planned | User-enabled Android mechanism; test foreground detection, bypass paths, revocation and OEM differences |
+| Select installed launcher apps | In progress | Current picker queries launcher activities; verify device visibility and special app cases |
+| Block selected apps during a focus timer | In progress | Initial AccessibilityService reads package identifiers only and presents an accessibility overlay; test real devices, process death, OEM differences and user disablement |
 | Schedules and daily limits | Planned | Handle reboot, process death, clock changes, time zones and overlapping rules |
 | Strict sessions | Planned | Describe what can and cannot be enforced; never claim impossible-to-bypass protection |
 | Usage analytics | Planned | Usage access is user-granted in Settings; collect only what the feature needs |
@@ -37,15 +37,15 @@ The web preview is a product-design review surface. It cannot validate Android s
 
 | Requirement | Status | Acceptance evidence |
 |---|---|---|
-| Offline-first core | Planned | Core flows work in airplane mode |
+| Offline-first core | In progress | Core flows work in airplane mode; verify no hidden network dependency |
 | No ads, subscriptions or paywalls | Product commitment | Dependency and release review |
 | No mandatory account | Product commitment | Fresh install and core flows work without sign-in |
 | Local export and deletion | Planned | Export is readable; deletion removes app-owned records |
-| Accessibility | Planned | TalkBack, scalable text, contrast, touch targets and reduced motion |
+| Accessibility | In progress | TalkBack, scalable text, contrast, touch targets and reduced motion |
 | Automated tests | In progress | Unit tests, lint, build and feature integration tests |
-| GitHub Pages preview | In progress | Preview deployment succeeds from the public repository |
+| GitHub Pages preview | Blocked by repository Pages setup | Enable GitHub Pages with Source = GitHub Actions in repository Settings |
 | Android APK release | In progress | Reproducible CI build; signing key never committed to public source |
 
 ## Preview limitations
 
-The site in the site directory is a browser-based design prototype. Some numbers and charts are illustrative. App selection, schedule toggles and the timer demonstrate interaction only; they do not block Android apps or read device usage. Do not use preview-only data as evidence of actual digital-wellbeing outcomes.
+The site directory contains a browser-based design prototype. Some numbers and charts are illustrative. App selection, schedule toggles and the timer demonstrate interaction only; they do not block Android apps or read device usage. Do not use preview-only data as evidence of actual digital-wellbeing outcomes.
