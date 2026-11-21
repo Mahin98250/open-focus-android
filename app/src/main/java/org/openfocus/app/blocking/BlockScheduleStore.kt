@@ -40,7 +40,7 @@ class BlockScheduleStore(context: Context) {
                 val id = item.optString("id")
                 runCatching {
                     AppBlockSchedule(
-                        id = id.takeIf(String::isNotBlank) ?: UUID.randomUUID().toString(),
+                        id = id.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString(),
                         name = name,
                         startMinuteOfDay = start,
                         endMinuteOfDay = end,
@@ -96,7 +96,7 @@ class BlockScheduleStore(context: Context) {
         val array = JSONArray()
         schedules.forEach { schedule ->
             val days = JSONArray()
-            schedule.daysOfWeek.sorted().forEach(days::put)
+            schedule.daysOfWeek.sorted().forEach { day -> days.put(day) }
             array.put(
                 JSONObject()
                     .put("id", schedule.id)
