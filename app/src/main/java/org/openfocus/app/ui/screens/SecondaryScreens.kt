@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -51,7 +52,7 @@ fun PlannerScreen(modifier: Modifier = Modifier) {
     val tasks = remember { mutableStateListOf<PlannerTask>().apply { addAll(store.load()) } }
     var draft by remember { mutableStateOf("") }
 
-    Column(modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text("TURN INTENTIONS INTO ACTION", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
             Text("A plan that breathes.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
@@ -80,7 +81,7 @@ fun PlannerScreen(modifier: Modifier = Modifier) {
                 Text(tasks.count { it.completed }.toString() + " of " + tasks.size + " complete", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
         }
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             items(tasks, key = { it.id }) { task ->
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Row(
