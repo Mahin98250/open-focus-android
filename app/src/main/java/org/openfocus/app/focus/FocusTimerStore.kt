@@ -103,7 +103,8 @@ class FocusTimerStore(context: Context) {
         val duration = preferences.getLong(KEY_DURATION, DEFAULT_DURATION_MILLIS)
             .coerceIn(MIN_DURATION_MILLIS, MAX_DURATION_MILLIS)
 
-        if (wasRunning && endAt > 0L && endAt <= nowEpochMillis) {
+        val completedOnTime = wasRunning && endAt > 0L && endAt <= nowEpochMillis
+        if (completedOnTime) {
             sessionHistory.recordCompleted(duration, endAt)
         }
 
@@ -112,8 +113,21 @@ class FocusTimerStore(context: Context) {
             .remove(KEY_END_AT)
             .putLong(KEY_REMAINING, 0L)
             .putBoolean(KEY_COMPLETED, true)
+            .putBoolean(KEY_NOTIFICATION_PENDING, completedOnTime || preferences.getBoolean(KEY_NOTIFICATION_PENDING, false))
             .apply()
         alarmScheduler.cancel()
+    }
+
+    /**
+     * Consume the one-shot completion notification flag. The receiver, foreground UI
+     * and accessibility watchdog may race to finish a deadline; only one can consume it.
+     */
+    fun takeCompletionNotification(): Boolean {
+        val pending = preferences.getBoolean(KEY_NOTIFICATION_PENDING, false)
+        if (pending) {
+            preferences.edit().putBoolean(KEY_NOTIFICATION_PENDING, false).commit()
+        }
+        return pending
     }
 
     companion object {
@@ -126,6 +140,7 @@ class FocusTimerStore(context: Context) {
         private const val KEY_REMAINING = "remaining"
         private const val KEY_DURATION = "duration"
         private const val KEY_COMPLETED = "completed"
+        private const val KEY_NOTIFICATION_PENDING = "notification_pending"
     }
 }
 
