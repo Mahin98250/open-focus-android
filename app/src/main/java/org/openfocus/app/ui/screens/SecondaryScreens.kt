@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +41,8 @@ import android.content.Intent
 import android.provider.Settings
 import org.openfocus.app.usage.UsageStatsRepository
 import org.openfocus.app.focus.FocusSessionHistoryStore
+import org.openfocus.app.blocking.AppBlockSchedule
+import org.openfocus.app.blocking.BlockScheduleStore
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.openfocus.app.planner.PlannerStore
@@ -118,16 +121,165 @@ fun PlannerScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun ScheduleScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
-    Column(modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    val context = LocalContext.current
+    val store = remember(context) { BlockScheduleStore(context) }
+    val schedules = remember { mutableStateListOf<AppBlockSchedule>().apply { addAll(store.load()) } }
+    var name by remember { mutableStateOf("") }
+    var startTime by remember { mutableStateOf("16:00") }
+    var endTime by remember { mutableStateOf("18:00") }
+    var selectedDays by remember {
+        mutableStateOf(
+            setOf(Calendar.MONDAY, Calendar.TUESDAY, Calendar.WEDNESDAY, Calendar.THURSDAY, Calendar.FRIDAY)
+        )
+    }
+
+    val weekdays = listOf(
+        Calendar.SUNDAY to "S",
+        Calendar.MONDAY to "M",
+        Calendar.TUESDAY to "T",
+        Calendar.WEDNESDAY to "W",
+        Calendar.THURSDAY to "T",
+        Calendar.FRIDAY to "F",
+        Calendar.SATURDAY to "S"
+    )
+    val parsedStart = parseClockTime(startTime)
+    val parsedEnd = parseClockTime(endTime)
+    val canAdd = name.isNotBlank() && parsedStart != null && parsedEnd != null &&
+        parsedStart != parsedEnd && selectedDays.isNotEmpty()
+
+    Column(
+        modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
         TextButton(onClick = onBack) { Text("← App garden") }
         Text("MAKE SPACE AUTOMATIC", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
         Text("Find your rhythm.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        Text("Scheduled blocking is the next milestone after focus-session blocking. These examples are design previews, not active schedules.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        PreviewSchedule("Morning deep work", "Monday – Friday · 7:00 AM – 9:00 AM")
-        PreviewSchedule("Evening study time", "Monday – Thursday · 6:00 PM – 8:00 PM")
-        PreviewSchedule("Sleep & unwind", "Every day · 10:00 PM – 6:00 AM")
+        Text(
+            "Choose the days and hours when your selected apps should take a pause. Schedules use your phone's local time.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("CREATE A FOCUS WINDOW", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.take(64) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Schedule name") },
+                    placeholder = { Text("e.g. Evening study") },
+                    singleLine = true
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    OutlinedTextField(
+                        value = startTime,
+                        onValueChange = { startTime = it.filter { ch -> ch.isDigit() || ch == ':' }.take(5) },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Start · HH:mm") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = endTime,
+                        onValueChange = { endTime = it.filter { ch -> ch.isDigit() || ch == ':' }.take(5) },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("End · HH:mm") },
+                        singleLine = true
+                    )
+                }
+                Text("REPEAT ON", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    weekdays.forEach { (day, label) ->
+                        FilterChip(
+                            selected = day in selectedDays,
+                            onClick = {
+                                selectedDays = if (day in selectedDays) selectedDays - day else selectedDays + day
+                            },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+                if (parsedStart != null && parsedStart == parsedEnd) {
+                    Text("Start and end times must be different.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                } else if (parsedStart == null || parsedEnd == null) {
+                    Text("Enter times in 24-hour HH:mm format, such as 07:30 or 18:15.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                } else if (parsedEnd < parsedStart) {
+                    Text("Overnight window: this schedule continues into the next selected day.", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodySmall)
+                }
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = canAdd,
+                    onClick = {
+                        val schedule = store.add(name, parsedStart!!, parsedEnd!!, selectedDays)
+                        schedules.add(schedule)
+                        name = ""
+                    }
+                ) { Text("＋ Add focus schedule") }
+            }
+        }
+
+        Text("YOUR SCHEDULES · ${schedules.size}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+        if (schedules.isEmpty()) {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Text(
+                    "No schedules yet. Add a focus window above to automatically block your selected apps during those hours.",
+                    modifier = Modifier.padding(18.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            schedules.toList().forEach { schedule ->
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                    Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(schedule.name, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    formatClockTime(schedule.startMinuteOfDay) + " – " + formatClockTime(schedule.endMinuteOfDay),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                            Switch(
+                                checked = schedule.enabled,
+                                onCheckedChange = { enabled ->
+                                    store.setEnabled(schedule.id, enabled)
+                                    val index = schedules.indexOfFirst { it.id == schedule.id }
+                                    if (index >= 0) schedules[index] = schedule.copy(enabled = enabled)
+                                }
+                            )
+                        }
+                        Text(
+                            weekdays.filter { it.first in schedule.daysOfWeek }.joinToString(" · ") { it.second },
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        TextButton(onClick = {
+                            store.delete(schedule.id)
+                            schedules.removeAll { it.id == schedule.id }
+                        }) { Text("Remove schedule") }
+                    }
+                }
+            }
+        }
+        Text(
+            "A schedule only blocks apps in your selected app garden and only while the Android accessibility service is enabled. You can turn schedules off or disable access in Android Settings. Blocking is not tamper-proof.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
+
+private fun parseClockTime(value: String): Int? {
+    val parts = value.trim().split(":")
+    if (parts.size != 2) return null
+    val hours = parts[0].toIntOrNull() ?: return null
+    val minutes = parts[1].toIntOrNull() ?: return null
+    if (hours !in 0..23 || minutes !in 0..59) return null
+    return hours * 60 + minutes
+}
+
+private fun formatClockTime(minuteOfDay: Int): String =
+    "%02d:%02d".format(minuteOfDay / 60, minuteOfDay % 60)
 
 @Composable
 private fun PreviewSchedule(title: String, details: String) {
