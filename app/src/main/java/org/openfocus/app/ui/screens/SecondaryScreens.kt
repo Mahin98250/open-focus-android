@@ -19,6 +19,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import java.text.DateFormat
 import java.util.Calendar
+import android.content.Intent
+import android.provider.Settings
+import org.openfocus.app.usage.UsageStatsRepository
+import org.openfocus.app.usage.AppUsageSummary
 import org.openfocus.app.focus.FocusSessionHistoryStore
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -138,6 +143,30 @@ private fun PreviewSchedule(title: String, details: String) {
 fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
     val context = LocalContext.current
     val sessions = remember(context) { FocusSessionHistoryStore(context).load() }
+    val usageRepository = remember(context) { UsageStatsRepository(context) }
+    val disclosurePreferences = remember(context) {
+        context.getSharedPreferences("usage_access_disclosure", android.content.Context.MODE_PRIVATE)
+    }
+    var disclosureAccepted by remember {
+        mutableStateOf(disclosurePreferences.getBoolean("accepted", false))
+    }
+    var usageAccessGranted by remember { mutableStateOf(usageRepository.hasUsageAccess()) }
+    var usageSummary by remember { mutableStateOf(usageRepository.loadLast24Hours()) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    fun refreshUsage() {
+        usageAccessGranted = usageRepository.hasUsageAccess()
+        usageSummary = if (usageAccessGranted) usageRepository.loadLast24Hours() else null
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshUsage()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val weekStart = remember {
         Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -7) }.timeInMillis
     }
@@ -162,7 +191,70 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
         }
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("RECENT SESSIONS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                Text("DEVICE APP USAGE · LAST 24 HOURS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                if (!usageAccessGranted) {
+                    Text("See how much time your apps use.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Android keeps this data behind a special Usage Access setting. When enabled, this app reads the system's foreground-time totals and last-used times, calculates the summary on this device and does not upload it.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = disclosureAccepted,
+                            onCheckedChange = {
+                                disclosureAccepted = it
+                                disclosurePreferences.edit().putBoolean("accepted", it).apply()
+                            }
+                        )
+                        Text(
+                            "I understand what app-usage information this feature reads and how it is used.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Button(
+                        enabled = disclosureAccepted,
+                        onClick = {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                            }
+                        }
+                    ) { Text("Open Usage Access settings") }
+                } else if (usageSummary == null) {
+                    Text(
+                        "Usage Access is enabled, but Android has not returned any usage records for this period yet.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    TextButton(onClick = { refreshUsage() }) { Text("Refresh usage data") }
+                } else {
+                    val summary = usageSummary!!
+                    Text(formatInsightDuration(summary.totalForegroundMillis), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text("Foreground time reported by Android", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    if (summary.apps.isEmpty()) {
+                        Text("No app usage has been reported in the last 24 hours.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        summary.apps.take(8).forEach { app ->
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(app.displayName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Text(app.packageName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(formatInsightDuration(app.foregroundMillis), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    TextButton(onClick = { refreshUsage() }) { Text("Refresh usage data") }
+                }
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("RECENT FOCUS SESSIONS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 if (sessions.isEmpty()) {
                     Text("Your first completed focus session will appear here.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
@@ -175,7 +267,11 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
                 }
             }
         }
-        Text("Insights are based on completed focus sessions recorded on this device. App usage analytics will be added separately and require optional Android Usage Access.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Text(
+            "Focus history comes from sessions completed in this app. Device usage comes from Android's Usage Access API and stays local. These are different measurements.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 
