@@ -1,5 +1,10 @@
 package org.openfocus.app.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +68,21 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     val timeText = "%02d:%02d".format(seconds / 60L, seconds % 60L)
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val progressColor = MaterialTheme.colorScheme.primary
+    val startOrResume: () -> Unit = {
+        if (snapshot.isCompleted || snapshot.remainingMillis <= 0L) {
+            store.start(durationMillis = selectedMinutes * 60_000L)
+        } else {
+            store.start()
+        }
+        snapshot = store.load()
+        remaining = snapshot.remainingMillis
+    }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        // A denied notification permission does not prevent the user from focusing.
+        startOrResume()
+    }
 
     Column(
         modifier = modifier.fillMaxWidth().padding(20.dp),
@@ -143,13 +163,16 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                     onClick = {
                         if (snapshot.isRunning) {
                             store.pause()
-                        } else if (snapshot.isCompleted || snapshot.remainingMillis <= 0L) {
-                            store.start(durationMillis = selectedMinutes * 60_000L)
+                            snapshot = store.load()
+                            remaining = snapshot.remainingMillis
+                        } else if (
+                            Build.VERSION.SDK_INT >= 33 &&
+                            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
-                            store.start()
+                            startOrResume()
                         }
-                        snapshot = store.load()
-                        remaining = snapshot.remainingMillis
                     }
                 ) { Text(if (snapshot.isRunning) "Pause session" else "Start focus session") }
                 OutlinedButton(
@@ -173,7 +196,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                     singleLine = true
                 )
                 Text(
-                    "Selected apps are redirected only while this focus timer is running and the accessibility service is enabled.",
+                    "Selected apps are redirected only while this focus timer is running and the accessibility service is enabled. Android may delay background completion notifications to save battery.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
