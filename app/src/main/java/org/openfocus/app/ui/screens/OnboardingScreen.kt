@@ -72,7 +72,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 Text(step.body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Button(Modifier.fillMaxWidth(), onClick = { if (stepIndex == welcomeSteps.lastIndex) onComplete() else stepIndex += 1 }) {
+                Button(onClick = { if (stepIndex == welcomeSteps.lastIndex) onComplete() else stepIndex += 1 }, modifier = Modifier.fillMaxWidth()) {
                     Text(step.action, Modifier.padding(vertical = 5.dp))
                 }
                 if (stepIndex < welcomeSteps.lastIndex) {
