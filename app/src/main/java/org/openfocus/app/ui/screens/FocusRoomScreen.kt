@@ -64,10 +64,9 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
             }
         }
         remaining = snapshot.remainingMillis
-    }
-
-    if (snapshot.isCompleted && store.takeCompletionNotification()) {
-        FocusCompletionNotification.show(context)
+        if (snapshot.isCompleted && store.takeCompletionNotification()) {
+            FocusCompletionNotification.show(context)
+        }
     }
 
     val totalMillis = snapshot.totalDurationMillis.coerceAtLeast(1L)
