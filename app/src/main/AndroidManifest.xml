@@ -15,11 +15,6 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
-            android:name=".blocking.ui.BlockedAppActivity"
-            android:exported="false"
-            android:excludeFromRecents="true" />
-
-        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
