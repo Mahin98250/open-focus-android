@@ -20,14 +20,23 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import org.openfocus.app.focus.FocusTimerStore
 
 private val Ink = Color(0xFF0B0E13)
 private val Panel = Color(0xFF151B24)
@@ -62,6 +71,29 @@ private fun OpenFocusTheme(content: @Composable () -> Unit) {
 
 @Composable
 private fun DashboardScreen() {
+    val context = LocalContext.current
+    val timerStore = remember { FocusTimerStore(context) }
+    var timerSnapshot by remember { mutableStateOf(timerStore.load()) }
+    var remainingMillis by remember { mutableStateOf(timerSnapshot.remainingMillis) }
+
+    LaunchedEffect(timerSnapshot.isRunning, timerSnapshot.endAtEpochMillis) {
+        val endAt = timerSnapshot.endAtEpochMillis
+        if (timerSnapshot.isRunning && endAt != null) {
+            while (true) {
+                val remaining = (endAt - System.currentTimeMillis()).coerceAtLeast(0L)
+                remainingMillis = remaining
+                if (remaining == 0L) {
+                    timerStore.finish()
+                    timerSnapshot = timerStore.load()
+                    break
+                }
+                delay(1_000L)
+            }
+        } else {
+            remainingMillis = timerSnapshot.remainingMillis
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Ink
@@ -125,7 +157,7 @@ private fun DashboardScreen() {
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "25:00",
+                                text = String.format("%02d:%02d", remainingMillis / 60_000L, (remainingMillis / 1_000L) % 60L),
                                 color = Color.White,
                                 fontSize = 48.sp,
                                 fontWeight = FontWeight.Light
@@ -139,8 +171,15 @@ private fun DashboardScreen() {
                         }
                     }
                     Button(
-                        onClick = { },
-                        enabled = false,
+                        onClick = {
+                            if (timerSnapshot.isRunning) {
+                                timerStore.pause()
+                            } else {
+                                timerStore.start()
+                            }
+                            timerSnapshot = timerStore.load()
+                            remainingMillis = timerSnapshot.remainingMillis
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Accent,
@@ -149,11 +188,25 @@ private fun DashboardScreen() {
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Text(
-                            text = "Coming in the next update",
+                            text = if (timerSnapshot.isRunning) "Pause focus session" else if (timerSnapshot.isCompleted) "Start another session" else "Start focus session",
                             modifier = Modifier.padding(vertical = 5.dp),
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+                    TextButton(
+                        onClick = {
+                            timerStore.reset()
+                            timerSnapshot = timerStore.load()
+                            remainingMillis = timerSnapshot.remainingMillis
+                        }
+                    ) {
+                        Text("Reset timer", color = Muted)
+                    }
+                    Text(
+                        text = if (timerSnapshot.isCompleted) "Session complete. Take a short break." else "Your timer state is saved on this device.",
+                        color = Muted,
+                        fontSize = 11.sp
+                    )
                 }
             }
 
