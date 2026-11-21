@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -45,6 +46,8 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     var blockedPackages by remember { mutableStateOf(store.blockedPackages()) }
     var serviceEnabled by remember { mutableStateOf(isBlockingServiceEnabled(context)) }
+    val disclosurePreferences = remember { context.getSharedPreferences("app_block_disclosure", Context.MODE_PRIVATE) }
+    var disclosureAccepted by remember { mutableStateOf(disclosurePreferences.getBoolean("accessibility_disclosure_accepted", false)) }
 
     val installedApps = remember {
         val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
@@ -84,7 +87,24 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     style = MaterialTheme.typography.bodyMedium
                 )
-                Button(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = disclosureAccepted,
+                        onCheckedChange = {
+                            disclosureAccepted = it
+                            disclosurePreferences.edit().putBoolean("accessibility_disclosure_accepted", it).apply()
+                        }
+                    )
+                    Text(
+                        "I understand this service reads the foreground app's package name to enforce my own block list. It does not read screen content.",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Button(
+                    enabled = disclosureAccepted || serviceEnabled,
+                    onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                ) {
                     Text(if (serviceEnabled) "Review Android access" else "Open Accessibility settings")
                 }
             }
