@@ -26,9 +26,12 @@ See [the feature-by-feature verification matrix](docs/FEATURE_PARITY.md). A feat
 
 - Three-step animated onboarding with an explicit skip path.
 - Native Compose app shell with Overview, Focus, Apps, Planner, Insights, Schedules, Growth and Settings pages.
-- Focus timer with 25, 45 and 60 minute choices, start/pause/reset and locally persisted deadline state.
+- Focus timer with 25, 45 and 60 minute presets, custom 1–180 minute sessions, start/pause/reset and a persisted deadline that resumes after process death.
+- Completed focus-session history stored locally, with one-shot completion notifications through a battery-friendly inexact alarm. Android may defer delivery; no exact-alarm access is requested.
+- Local installed-launcher-app picker and recurring weekly app-blocking schedules, including overnight windows. Selected apps are blocked during a running focus session or active schedule after the user enables the accessibility service.
+- An Insights page with local focus-session history and optional Android Usage Access for app foreground-time summaries. Usage aggregates are calculated on-device and are not uploaded.
 - Local installed-launcher-app picker. Selected package names are stored on-device.
-- Initial optional app-blocking path: after a separate in-app disclosure and explicit user acknowledgement, the user can enable the accessibility service in Android Settings. It observes only foreground package identifiers and displays a touchable accessibility overlay for selected apps while a focus timer is running.
+- Optional app blocking: after a separate in-app disclosure and explicit user acknowledgement, the user can enable the accessibility service in Android Settings. It observes only foreground package identifiers and displays a touchable accessibility overlay for selected apps while a focus timer or saved recurring schedule is active.
 - Local planner with task add, completion, removal and persistence.
 - Timer deadline calculation unit tests.
 
@@ -36,9 +39,9 @@ See [the feature-by-feature verification matrix](docs/FEATURE_PARITY.md). A feat
 
 ## Not implemented or not yet verified
 
-- Background timer notifications, reliable reboot recovery and session history.
-- Recurring schedules and daily usage limits; the current schedule page is a design preview.
-- UsageStats-based screen-time analytics and actual trend reports.
+- Reliable timer notification delivery under battery restrictions and timer/alarm restoration after device reboot. The current alarm is inexact and may be delayed.
+- Daily app-use limits, schedule exceptions, advanced schedule conflicts and full historical usage trends.
+- Screen-time reports beyond the available Android usage aggregates; usage data and schedule behaviour still need real-device verification.
 - Website filtering / local VPN.
 - Completed-session streaks, achievements and rewards logic.
 - Community, accounts or cloud sync.
