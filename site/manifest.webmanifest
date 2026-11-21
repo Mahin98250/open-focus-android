@@ -1,0 +1,19 @@
+{
+  "name": "Focus Garden — Product Preview",
+  "short_name": "Focus Garden",
+  "description": "A calmer way to reclaim your attention.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101713",
+  "theme_color": "#101713",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
