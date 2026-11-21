@@ -205,7 +205,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                     singleLine = true
                 )
                 Text(
-                    "Selected apps are redirected only while this focus timer is running and the accessibility service is enabled. Android may delay background completion notifications to save battery.",
+                    "Selected apps are redirected during this focus timer or an active schedule when the accessibility service is enabled. Android may delay background completion notifications to save battery.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
