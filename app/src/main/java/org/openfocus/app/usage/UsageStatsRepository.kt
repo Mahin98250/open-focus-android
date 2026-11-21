@@ -71,9 +71,6 @@ class UsageStatsRepository(private val context: Context) {
 
     private fun resolveDisplayName(packageName: String): String {
         return runCatching {
-            val info = context.packageManager.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
-            context.packageManager.getApplicationLabel(info).toString()
-        }.recoverCatching {
             @Suppress("DEPRECATION")
             val info = context.packageManager.getApplicationInfo(packageName, 0)
             context.packageManager.getApplicationLabel(info).toString()
