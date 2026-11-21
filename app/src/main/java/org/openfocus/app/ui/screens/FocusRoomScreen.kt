@@ -44,7 +44,8 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     val store = remember { FocusTimerStore(context) }
     var snapshot by remember { mutableStateOf(store.load()) }
     var remaining by remember { mutableStateOf(snapshot.remainingMillis) }
-    var selectedMinutes by remember { mutableIntStateOf(25) }
+    var selectedMinutes by remember { mutableIntStateOf((snapshot.totalDurationMillis / 60_000L).toInt()) }
+    var customMinutesText by remember { mutableStateOf("") }
     var intention by remember { mutableStateOf("") }
 
     LaunchedEffect(snapshot.isRunning, snapshot.endAtEpochMillis) {
@@ -56,7 +57,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
         remaining = snapshot.remainingMillis
     }
 
-    val totalMillis = (selectedMinutes * 60_000L).coerceAtLeast(1L)
+    val totalMillis = snapshot.totalDurationMillis.coerceAtLeast(1L)
     val progress = (remaining.toFloat() / totalMillis).coerceIn(0f, 1f)
     val seconds = (remaining / 1_000L).coerceAtLeast(0L)
     val timeText = "%02d:%02d".format(seconds / 60L, seconds % 60L)
@@ -116,6 +117,26 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                             enabled = !snapshot.isRunning
                         )
                     }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = customMinutesText,
+                        onValueChange = { customMinutesText = it.filter(Char::isDigit).take(3) },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Custom minutes") },
+                        singleLine = true,
+                        enabled = !snapshot.isRunning
+                    )
+                    OutlinedButton(
+                        enabled = !snapshot.isRunning && customMinutesText.toIntOrNull() in 1..180,
+                        onClick = {
+                            val minutes = customMinutesText.toIntOrNull() ?: return@OutlinedButton
+                            selectedMinutes = minutes
+                            store.reset(minutes * 60_000L)
+                            snapshot = store.load()
+                            remaining = snapshot.remainingMillis
+                        }
+                    ) { Text("Set") }
                 }
                 Button(
                     modifier = Modifier.fillMaxWidth(),
