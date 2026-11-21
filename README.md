@@ -2,7 +2,7 @@
 
 An independent, open-source Android focus and digital-wellbeing application. The project is being developed as an offline-first, privacy-first alternative in the focus and distraction-control category.
 
-> **Status:** Early development — Phase 0 (project foundation). This is not yet a feature-complete app. Blocking, usage analytics, synchronization and other advanced capabilities will be implemented and tested in later milestones.
+> **Status:** Early development — foundation and first focus-timer slice. This is not yet a feature-complete app. App blocking, usage analytics, study planning, synchronization and other advanced capabilities are still planned.
 
 ## Principles
 
@@ -33,9 +33,14 @@ Debug APKs are for testing. A stable public release will use a separately manage
 
 The project uses GitHub Actions hosted runners; contributors do not need to commit local build outputs.
 
-## Project status
+## Current functionality
 
-The initial milestone establishes the build, app shell, design foundation and CI. Planned modules include focus sessions, app blocking, usage insights, study planning, website filtering and optional community features. Android permission and platform restrictions will be documented honestly; no feature will be described as impossible to bypass.
+- 25-minute focus countdown.
+- Start, pause and reset controls.
+- Timer end-time is saved locally so the countdown can be reconstructed after the app process is closed and reopened.
+- Dark Compose dashboard foundation.
+
+The timer currently has no background completion notification, session history or configurable durations. App blocking, usage insights, study planning, website filtering and optional community features are planned, not implemented yet. Android permission and platform restrictions will be documented honestly; no feature will be described as impossible to bypass.
 
 ## License
 
