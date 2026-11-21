@@ -16,7 +16,9 @@ The project currently has one Gradle application module, with feature boundaries
 
 - ui/ — app shell, shared theme and Compose screens.
 - focus/ — persisted deadline-based focus timer state.
-- blocking/ — local selected-package rules and the opt-in accessibility service.
+- blocking/ — local selected-package rules, recurring weekly schedule evaluator and the opt-in accessibility service.
+- focus/ — session deadline state, completed-session history and best-effort completion alarm.
+- usage/ — on-demand UsageStatsManager adapter, called only after user-granted Usage Access.
 - planner/ — locally persisted task model and store.
 - res/xml/ — the minimum accessibility-service declaration.
 
@@ -31,10 +33,18 @@ The native app picker queries launcher activities through a narrow manifest quer
 3. The app displays a separate disclosure and requires affirmative acknowledgement before opening Android Accessibility settings.
 4. The user explicitly enables the service in Android settings.
 5. The service receives window-state events and checks only the foreground package identifier against the local block list.
-6. A selected app is covered by a touchable accessibility overlay only while a focus timer is running.
-7. The user can return to the launcher or end the focus session.
+6. A selected app is covered by a touchable accessibility overlay while a focus timer is running or a saved weekly schedule is active according to the device's local clock.
+7. The user can return to the launcher; the feature does not claim to be tamper-proof.
 
 The service sets canRetrieveWindowContent=false. It does not request screen text, view hierarchy, gestures, keystrokes or message contents. It is an initial implementation and is not yet verified across real devices or Android manufacturers. Accessibility APIs are sensitive and distribution requirements must be reviewed; see ANDROID_PERMISSIONS.md.
+
+## Usage analytics
+
+The `usage/` adapter checks the special Usage Access AppOp before querying `UsageStatsManager`. It reads a last-24-hour aggregate on demand when the user opens Insights and again when the screen resumes from Android Settings. It does not poll continuously, upload usage events or retain a separate usage history. Historical trends and usage limits are future work.
+
+## Schedules
+
+Weekly schedules are stored in app-private preferences as weekday sets and start/end minutes in local device time. The evaluator handles same-day and overnight windows. The accessibility service evaluates the rules when a foreground app changes and while a blocker overlay is visible; exact background alarms are not used for app blocking.
 
 ## Target architecture
 
