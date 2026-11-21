@@ -17,6 +17,7 @@ data class FocusTimerSnapshot(
 class FocusTimerStore(context: Context) {
     private val preferences = context.getSharedPreferences("focus_timer", Context.MODE_PRIVATE)
     private val sessionHistory = FocusSessionHistoryStore(context)
+    private val alarmScheduler = FocusTimerAlarmScheduler(context)
 
     fun load(nowEpochMillis: Long = System.currentTimeMillis()): FocusTimerSnapshot {
         val running = preferences.getBoolean(KEY_RUNNING, false)
@@ -42,6 +43,7 @@ class FocusTimerStore(context: Context) {
                 .putBoolean(KEY_RUNNING, false)
                 .remove(KEY_END_AT)
                 .apply()
+            alarmScheduler.cancel()
         }
         return FocusTimerSnapshot(false, null, storedRemaining, storedDuration, completed)
     }
@@ -56,13 +58,15 @@ class FocusTimerStore(context: Context) {
             ?.coerceIn(MIN_DURATION_MILLIS, MAX_DURATION_MILLIS)
             ?: DEFAULT_DURATION_MILLIS
 
+        val endAt = nowEpochMillis + selectedDuration
         preferences.edit()
             .putBoolean(KEY_RUNNING, true)
-            .putLong(KEY_END_AT, nowEpochMillis + selectedDuration)
+            .putLong(KEY_END_AT, endAt)
             .putLong(KEY_REMAINING, selectedDuration)
             .putLong(KEY_DURATION, selectedDuration)
             .putBoolean(KEY_COMPLETED, false)
             .apply()
+        alarmScheduler.schedule(endAt)
     }
 
     fun pause(nowEpochMillis: Long = System.currentTimeMillis()) {
@@ -74,6 +78,7 @@ class FocusTimerStore(context: Context) {
             .remove(KEY_END_AT)
             .putLong(KEY_REMAINING, current.remainingMillis)
             .apply()
+        alarmScheduler.cancel()
     }
 
     fun reset(durationMillis: Long = DEFAULT_DURATION_MILLIS) {
@@ -85,6 +90,7 @@ class FocusTimerStore(context: Context) {
             .putLong(KEY_DURATION, safeDuration)
             .putBoolean(KEY_COMPLETED, false)
             .apply()
+        alarmScheduler.cancel()
     }
 
     /**
@@ -107,6 +113,7 @@ class FocusTimerStore(context: Context) {
             .putLong(KEY_REMAINING, 0L)
             .putBoolean(KEY_COMPLETED, true)
             .apply()
+        alarmScheduler.cancel()
     }
 
     companion object {
