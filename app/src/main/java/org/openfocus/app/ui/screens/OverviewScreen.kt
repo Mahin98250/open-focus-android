@@ -65,7 +65,7 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("YOUR NEXT SMALL STEP", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 Text("Choose the distractions you want to keep away.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text("Blocking only activates during a running focus session and after you explicitly enable the Android accessibility service.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Selected apps are blocked during a running focus session or an active recurring schedule, after you explicitly enable the Android accessibility service.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedButton(onClick = { onNavigate("apps") }) { Text("Set up my app garden") }
             }
         }
