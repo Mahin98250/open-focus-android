@@ -25,13 +25,18 @@ For reference:
 - Google Play AccessibilityService policy: https://support.google.com/googleplay/android-developer/answer/10964491
 - Google Play Developer Program Policy: https://support.google.com/googleplay/android-developer/answer/18265346
 
+## Usage analytics: Usage Access
+
+The Insights screen presents an in-app explanation and requires an affirmative acknowledgement before opening Android's Usage Access settings. After the user enables access, the app queries aggregated foreground-time usage for the preceding 24 hours when Insights opens or resumes. The calculation stays on-device; the app does not continuously poll usage events or upload them. Users can revoke Usage Access in Android Settings.
+
 ## Other future permissions
 
 | Feature | Permission / system access | Consent and limits |
 |---|---|---|
-| Screen-time analytics | Usage access via Android Settings | Explain that package usage timestamps/durations are read locally; provide an off switch and data deletion |
+| Screen-time analytics | Usage access via Android Settings | Implemented as an opt-in last-24-hour aggregate; verify data correctness, package visibility and revocation on real devices |
 | Website filtering | Android VpnService consent dialog | Run a local-only filter; disclose VPN conflict with other VPN apps; never route traffic to a paid remote provider |
 | Notifications | POST_NOTIFICATIONS on supported Android versions | Request only when reminders or session completion notifications are enabled |
-| Exact scheduling | Exact alarm access where the OS requires it | Explain why exact timing is needed; gracefully support inexact scheduling when permission is unavailable |
+| Focus completion reminders | POST_NOTIFICATIONS and an inexact AlarmManager alarm | Notification permission is requested in context on Android 13+; delivery may be delayed by Doze/battery policy; exact-alarm access is not requested |
+| Weekly app-blocking schedules | No exact alarm for foreground app checks | Local time rules are evaluated when a window-state event arrives; schedule start is not a guaranteed background wake-up |
 
 Never request broad permissions such as QUERY_ALL_PACKAGES or SYSTEM_ALERT_WINDOW merely for convenience. Select the narrowest capability that meets the user-visible feature.
