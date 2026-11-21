@@ -128,7 +128,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                         enabled = !snapshot.isRunning
                     )
                     OutlinedButton(
-                        enabled = !snapshot.isRunning && customMinutesText.toIntOrNull() in 1..180,
+                        enabled = !snapshot.isRunning && (customMinutesText.toIntOrNull()?.let { it in 1..180 } == true),
                         onClick = {
                             val minutes = customMinutesText.toIntOrNull() ?: return@OutlinedButton
                             selectedMinutes = minutes
@@ -141,8 +141,13 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        if (snapshot.isRunning) store.pause()
-                        else store.start(durationMillis = selectedMinutes * 60_000L)
+                        if (snapshot.isRunning) {
+                            store.pause()
+                        } else if (snapshot.isCompleted || snapshot.remainingMillis <= 0L) {
+                            store.start(durationMillis = selectedMinutes * 60_000L)
+                        } else {
+                            store.start()
+                        }
                         snapshot = store.load()
                         remaining = snapshot.remainingMillis
                     }
