@@ -27,6 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import java.text.DateFormat
+import java.util.Calendar
+import org.openfocus.app.focus.FocusSessionHistoryStore
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.openfocus.app.planner.PlannerStore
@@ -133,18 +136,64 @@ private fun PreviewSchedule(title: String, details: String) {
 
 @Composable
 fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val sessions = remember(context) { FocusSessionHistoryStore(context).load() }
+    val weekStart = remember {
+        Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -7) }.timeInMillis
+    }
+    val weekSessions = sessions.filter { it.completedAtEpochMillis >= weekStart }
+    val weekFocusMillis = weekSessions.sumOf { it.durationMillis }
+    val allFocusMillis = sessions.sumOf { it.durationMillis }
+
     Column(modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         TextButton(onClick = onBack) { Text("← Overview") }
         Text("NOTICE YOUR PROGRESS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
         Text("Your attention, in bloom.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            InsightMetric("LAST 7 DAYS", formatInsightDuration(weekFocusMillis), Modifier.weight(1f))
+            InsightMetric("SESSIONS", weekSessions.size.toString(), Modifier.weight(1f))
+        }
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("FOCUS HISTORY", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                Text("Your first session is waiting.", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                Text("This page will show verified local session totals, daily and weekly trends, and app-usage summaries. We do not invent statistics before the app has collected data.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("ALL-TIME FOCUS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                Text(formatInsightDuration(allFocusMillis), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(sessions.size.toString() + " completed sessions saved locally", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("RECENT SESSIONS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                if (sessions.isEmpty()) {
+                    Text("Your first completed focus session will appear here.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    sessions.takeLast(8).asReversed().forEach { session ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(session.completedAtEpochMillis), style = MaterialTheme.typography.bodySmall)
+                            Text(formatInsightDuration(session.durationMillis), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        }
+        Text("Insights are based on completed focus sessions recorded on this device. App usage analytics will be added separately and require optional Android Usage Access.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
     }
+}
+
+@Composable
+private fun InsightMetric(label: String, value: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+private fun formatInsightDuration(durationMillis: Long): String {
+    val totalMinutes = durationMillis / 60_000L
+    val hours = totalMinutes / 60L
+    val minutes = totalMinutes % 60L
+    return if (hours > 0L) "${hours}h ${minutes}m" else "${minutes}m"
 }
 
 @Composable
