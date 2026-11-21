@@ -18,6 +18,7 @@ import android.widget.TextView
 import android.content.res.ColorStateList
 import org.openfocus.app.focus.FocusTimerStore
 import org.openfocus.app.focus.FocusCompletionNotification
+import org.openfocus.app.blocking.BlockScheduleStore
 
 /**
  * Optional, explicitly user-enabled app guard.
@@ -36,10 +37,12 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     private val overlayWatchdog = object : Runnable {
         override fun run() {
             val timerStore = FocusTimerStore(this@AppBlockingAccessibilityService)
-            if (!timerStore.load().isRunning) {
-                if (timerStore.takeCompletionNotification()) {
-                    FocusCompletionNotification.show(this@AppBlockingAccessibilityService)
-                }
+            val focusActive = timerStore.load().isRunning
+            if (!focusActive && timerStore.takeCompletionNotification()) {
+                FocusCompletionNotification.show(this@AppBlockingAccessibilityService)
+            }
+            val scheduleActive = BlockScheduleStore(this@AppBlockingAccessibilityService).isBlockingNow()
+            if (!focusActive && !scheduleActive) {
                 removeBlockerOverlay()
             } else if (blockerOverlay != null) {
                 mainHandler.postDelayed(this, WATCHDOG_INTERVAL_MILLIS)
@@ -56,8 +59,9 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         if (!focusActive && timerStore.takeCompletionNotification()) {
             FocusCompletionNotification.show(this)
         }
+        val scheduleActive = BlockScheduleStore(this).isBlockingNow()
         val selectedForBlocking = AppBlockStore(this).isBlocked(foregroundPackage)
-        if (!focusActive || !selectedForBlocking) {
+        if ((!focusActive && !scheduleActive) || !selectedForBlocking) {
             removeBlockerOverlay()
             return
         }
