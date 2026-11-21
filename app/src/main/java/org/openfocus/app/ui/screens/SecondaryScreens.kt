@@ -30,12 +30,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.text.DateFormat
 import java.util.Calendar
 import android.content.Intent
 import android.provider.Settings
 import org.openfocus.app.usage.UsageStatsRepository
-import org.openfocus.app.usage.AppUsageSummary
 import org.openfocus.app.focus.FocusSessionHistoryStore
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
