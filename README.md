@@ -39,7 +39,7 @@ The initial milestone establishes the build, app shell, design foundation and CI
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+MIT License. See [LICENSE](LICENSE).
 
 ## Contributing
 
