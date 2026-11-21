@@ -2,7 +2,7 @@
 
 ## Current milestone
 
-The repository currently contains a small native Android application shell built with Kotlin and Jetpack Compose. The project is intentionally starting with one Gradle application module; feature modules will be extracted when their boundaries and dependencies are real rather than speculative.
+The repository currently contains a native Android application built with Kotlin and Jetpack Compose, including a first 25-minute focus timer backed by locally persisted end-time state. The project is intentionally starting with one Gradle application module; feature modules will be extracted when their boundaries and dependencies are real rather than speculative.
 
 ## Target architecture
 
