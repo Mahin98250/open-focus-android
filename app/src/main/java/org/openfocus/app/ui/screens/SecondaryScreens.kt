@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -174,7 +176,7 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
     val weekFocusMillis = weekSessions.sumOf { it.durationMillis }
     val allFocusMillis = sessions.sumOf { it.durationMillis }
 
-    Column(modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         TextButton(onClick = onBack) { Text("← Overview") }
         Text("NOTICE YOUR PROGRESS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
         Text("Your attention, in bloom.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
