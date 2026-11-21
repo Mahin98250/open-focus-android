@@ -14,11 +14,11 @@ An independent, open-source Android focus and digital-wellbeing application. The
 
 ## Build an APK
 
-Every push and pull request runs the Android CI workflow. Successful builds upload a debug APK as a workflow artifact. Published version tags will produce GitHub Releases.
+Every push and pull request runs the Android CI workflow. Successful builds upload a debug APK as the `open-focus-debug-apk` workflow artifact. Public GitHub Releases will be enabled after a stable APK signing process is established.
 
 1. Open the **Actions** tab.
 2. Select **Android CI** and open a successful run.
-3. Download the `app-debug` artifact.
+3. Download the `open-focus-debug-apk` artifact.
 4. Extract the ZIP and install the APK on a compatible Android device.
 
 Debug APKs are for testing. A stable public release will use a separately managed signing process.
