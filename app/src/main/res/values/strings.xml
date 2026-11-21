@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Focus Garden</string>
+    <string name="app_blocking_accessibility_description">Returns to your home screen when you open an app you selected for blocking during a focus period. It reads only the foreground app package name and does not inspect screen content.</string>
+</resources>
