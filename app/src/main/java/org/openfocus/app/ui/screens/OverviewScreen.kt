@@ -19,11 +19,21 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
+import org.openfocus.app.blocking.AppBlockStore
+import org.openfocus.app.focus.FocusSessionHistoryStore
+import org.openfocus.app.planner.PlannerStore
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
 fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) {
+    val context = LocalContext.current
+    val sessions = remember(context) { FocusSessionHistoryStore(context).load() }
+    val selectedAppCount = remember(context) { AppBlockStore(context).blockedPackages().size }
+    val tasks = remember(context) { PlannerStore(context).load() }
+    val completedTaskCount = tasks.count { it.completed }
+    val focusMillis = sessions.sumOf { it.durationMillis }
     Column(
         modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -43,12 +53,12 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
         }
         Text("YOUR DAY AT A GLANCE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            MetricCard("FOCUS TIME", "—", "Complete a session", Modifier.weight(1f))
-            MetricCard("BLOCK LIST", "—", "Choose distracting apps", Modifier.weight(1f))
+            MetricCard("FOCUS TIME", formatFocusDuration(focusMillis), "Completed sessions", Modifier.weight(1f))
+            MetricCard("BLOCK LIST", selectedAppCount.toString(), "Apps you selected", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            MetricCard("TASKS", "0", "Plan your next steps", Modifier.weight(1f))
-            MetricCard("STREAK", "0 days", "Build a gentle rhythm", Modifier.weight(1f))
+            MetricCard("TASKS", completedTaskCount.toString() + " / " + tasks.size, "Completed in your planner", Modifier.weight(1f))
+            MetricCard("SESSIONS", sessions.size.toString(), "Saved on this device", Modifier.weight(1f))
         }
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -82,4 +92,11 @@ private fun MetricCard(label: String, value: String, caption: String, modifier: 
             Text(caption, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+private fun formatFocusDuration(durationMillis: Long): String {
+    val totalMinutes = durationMillis / 60_000L
+    val hours = totalMinutes / 60L
+    val minutes = totalMinutes % 60L
+    return if (hours > 0L) "${hours}h ${minutes}m" else "${minutes}m"
 }
