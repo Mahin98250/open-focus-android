@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import org.openfocus.app.focus.FocusTimerStore
+import org.openfocus.app.focus.FocusCompletionNotification
 
 private val focusDurations = listOf(25, 45, 60)
 
@@ -58,8 +59,15 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
             delay(1_000L)
             snapshot = store.load()
             remaining = snapshot.remainingMillis
+            if (snapshot.isCompleted && store.takeCompletionNotification()) {
+                FocusCompletionNotification.show(context)
+            }
         }
         remaining = snapshot.remainingMillis
+    }
+
+    if (snapshot.isCompleted && store.takeCompletionNotification()) {
+        FocusCompletionNotification.show(context)
     }
 
     val totalMillis = snapshot.totalDurationMillis.coerceAtLeast(1L)
