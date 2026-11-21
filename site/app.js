@@ -1,5 +1,5 @@
 (() => {
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],key="focus-garden-preview-v1";
+const $=(s,root=document)=>root.querySelector(s),$=(s,root=document)=>[...root.querySelectorAll(s)],key="focus-garden-preview-v1";
 const read=()=>{try{return JSON.parse(localStorage.getItem(key)||"{}")}catch{return{}}},save=p=>{const n={...read(),...p};localStorage.setItem(key,JSON.stringify(n));return n};
 let toastTimer;function toast(m){const n=$("#toast");n.textContent=m;n.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.classList.remove("show"),2300)}
 const steps=[["A LITTLE SPACE FOR YOU","Your attention<br>deserves a garden.","Make room for the things you care about. We'll help the noisy apps take a little step back.","Let's make space"],["GENTLE, NOT GUILTY","Build habits<br>that feel like you.","Choose your focus rhythm, set kind boundaries and make steady progress—one small session at a time.","That sounds good"],["PRIVATE BY NATURE","Your progress<br>belongs to you.","No ads. No paid tiers. No account required for the core experience. Your garden grows on your device.","Explore my space"]];
