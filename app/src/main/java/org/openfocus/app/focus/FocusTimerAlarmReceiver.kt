@@ -14,16 +14,17 @@ import org.openfocus.app.MainActivity
 
 class FocusTimerAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        val snapshot = FocusTimerStore(context).load()
+        val store = FocusTimerStore(context)
+        val snapshot = store.load()
         if (snapshot.isRunning) {
             snapshot.endAtEpochMillis?.let { FocusTimerAlarmScheduler(context).schedule(it) }
             return
         }
-        if (snapshot.isCompleted) FocusCompletionNotification.show(context)
+        if (store.takeCompletionNotification()) FocusCompletionNotification.show(context)
     }
 }
 
-private object FocusCompletionNotification {
+internal object FocusCompletionNotification {
     private const val CHANNEL_ID = "focus-session-complete"
     private const val NOTIFICATION_ID = 7310
 
