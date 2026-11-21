@@ -53,17 +53,22 @@ class FocusTimerStore(context: Context) {
         durationMillis: Long? = null
     ) {
         val current = load(nowEpochMillis)
-        val selectedDuration = (durationMillis ?: current.remainingMillis)
-            .takeIf { it > 0L }
-            ?.coerceIn(MIN_DURATION_MILLIS, MAX_DURATION_MILLIS)
-            ?: DEFAULT_DURATION_MILLIS
+        val totalDuration = (durationMillis ?: current.totalDurationMillis)
+            .coerceIn(MIN_DURATION_MILLIS, MAX_DURATION_MILLIS)
+        val remainingDuration = if (durationMillis != null) {
+            totalDuration
+        } else {
+            current.remainingMillis.takeIf { it > 0L }
+                ?.coerceAtMost(totalDuration)
+                ?: totalDuration
+        }
 
-        val endAt = nowEpochMillis + selectedDuration
+        val endAt = nowEpochMillis + remainingDuration
         preferences.edit()
             .putBoolean(KEY_RUNNING, true)
             .putLong(KEY_END_AT, endAt)
-            .putLong(KEY_REMAINING, selectedDuration)
-            .putLong(KEY_DURATION, selectedDuration)
+            .putLong(KEY_REMAINING, remainingDuration)
+            .putLong(KEY_DURATION, totalDuration)
             .putBoolean(KEY_COMPLETED, false)
             .putBoolean(KEY_NOTIFICATION_PENDING, false)
             .apply()
