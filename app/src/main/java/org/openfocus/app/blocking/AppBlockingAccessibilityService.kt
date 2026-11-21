@@ -118,7 +118,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             setPadding(0, dp(12), 0, dp(10))
         }
         val message = TextView(this).apply {
-            text = appLabel + " is on your focus list right now. Take a breath, then choose what you want to do next."
+            text = appLabel + " is on your pause list right now. Take a breath, then choose what you want to do next."
             textSize = 15f
             setTextColor(Color.rgb(190, 207, 194))
             gravity = Gravity.CENTER
@@ -133,22 +133,12 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                 performGlobalAction(GLOBAL_ACTION_HOME)
             }
         }
-        val endButton = Button(this).apply {
-            text = "End focus session"
-            setTextColor(Color.rgb(205, 220, 208))
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(52, 72, 58))
-            setOnClickListener {
-                FocusTimerStore(this@AppBlockingAccessibilityService).reset()
-                removeBlockerOverlay()
-                performGlobalAction(GLOBAL_ACTION_HOME)
-            }
-        }
+
 
         panel.addView(flower, matchWrap())
         panel.addView(heading, matchWrap())
         panel.addView(message, matchWrap())
         panel.addView(leaveButton, buttonLayoutParams())
-        panel.addView(endButton, buttonLayoutParams())
         root.addView(panel, LinearLayout.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
