@@ -65,6 +65,7 @@ class FocusTimerStore(context: Context) {
             .putLong(KEY_REMAINING, selectedDuration)
             .putLong(KEY_DURATION, selectedDuration)
             .putBoolean(KEY_COMPLETED, false)
+            .putBoolean(KEY_NOTIFICATION_PENDING, false)
             .apply()
         alarmScheduler.schedule(endAt)
     }
@@ -89,6 +90,7 @@ class FocusTimerStore(context: Context) {
             .putLong(KEY_REMAINING, safeDuration)
             .putLong(KEY_DURATION, safeDuration)
             .putBoolean(KEY_COMPLETED, false)
+            .putBoolean(KEY_NOTIFICATION_PENDING, false)
             .apply()
         alarmScheduler.cancel()
     }
