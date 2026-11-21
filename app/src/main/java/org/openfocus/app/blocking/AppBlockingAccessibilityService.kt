@@ -3,6 +3,7 @@ package org.openfocus.app.blocking
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
+import org.openfocus.app.focus.FocusTimerStore
 import org.openfocus.app.blocking.ui.BlockedAppActivity
 
 /**
@@ -19,6 +20,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
         val foregroundPackage = event.packageName?.toString() ?: return
         if (foregroundPackage == packageName) return
+        // App restrictions are active only during a running focus session.
+        if (!FocusTimerStore(this).load().isRunning) return
         if (!AppBlockStore(this).isBlocked(foregroundPackage)) return
 
         val now = System.currentTimeMillis()
