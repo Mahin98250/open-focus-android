@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,13 +121,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val appBlockStore = remember(context) { AppBlockStore(context) }
     val preferences = remember(context) { context.getSharedPreferences("app_onboarding", Context.MODE_PRIVATE) }
 
-    var page by remember { mutableIntStateOf(0) }
-    var studyHours by remember { mutableFloatStateOf(4f) }
-    var focusMinutes by remember { mutableIntStateOf(25) }
-    var currentScreenTime by remember { mutableIntStateOf(5) }
-    var selectedApps by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var focusPriorities by remember { mutableStateOf(setOf("Study & exams")) }
-    var scanComplete by remember { mutableStateOf(false) }
+    var page by rememberSaveable { mutableIntStateOf(0) }
+    var studyHours by rememberSaveable { mutableFloatStateOf(4f) }
+    var focusMinutes by rememberSaveable { mutableIntStateOf(25) }
+    var currentScreenTime by rememberSaveable { mutableIntStateOf(5) }
+    var selectedApps by rememberSaveable { mutableStateOf<Set<String>>(emptySet()) }
+    var focusPriorities by rememberSaveable { mutableStateOf(setOf("Study & exams")) }
+    var scanComplete by rememberSaveable { mutableStateOf(false) }
 
     val scannedApps = remember(context) {
         val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
