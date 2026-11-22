@@ -173,8 +173,17 @@
     $("#onboarding").classList.add("hidden");
     $("#appShell").classList.remove("hidden");
     blocked = setup.blockedApps.slice();
+    if (!read().timerRunning) {
+      mode = "focus";
+      duration = setup.focusMinutes;
+      remaining = duration * 60;
+      endAt = null;
+      persistTimer();
+      paintTimer();
+    }
     go("home");
     renderBlocked();
+    updateDashboard();
     toast("Your personal focus space is ready");
   }
 
@@ -229,6 +238,7 @@
     const app = tile.dataset.app;
     blocked = blocked.includes(app) ? blocked.filter(value => value !== app) : [...blocked, app];
     renderBlocked();
+    updateDashboard();
     toast(blocked.includes(app) ? app + " added to your block list" : app + " removed from your block list");
   }));
   renderBlocked();
@@ -237,7 +247,7 @@
   const modes = { focus: 25, short: 5, long: 15 };
   const savedTimer = read();
   let mode = modes[savedTimer.timerMode] ? savedTimer.timerMode : "focus";
-  let duration = Number(savedTimer.timerDuration) || modes[mode];
+  let duration = Number(savedTimer.timerDuration) || (mode === "focus" ? setup.focusMinutes : modes[mode]);
   duration = Math.max(1, Math.min(180, duration));
   let endAt = Number(savedTimer.timerEndAt) || null;
   let remaining = Number.isFinite(Number(savedTimer.timerRemaining)) ? Number(savedTimer.timerRemaining) : duration * 60;
@@ -266,6 +276,8 @@
     $("#timerLabel").textContent = mode === "focus" ? "FOCUS SESSION" : mode === "short" ? "SHORT BREAK" : "LONG BREAK";
     $("#timerStatus").textContent = running ? "You're in your focus flow" : remaining === 0 ? "Session complete. Beautiful work." : "Ready when you are";
     $("#timerToggle").innerHTML = running ? "Pause session" : "Start session <span>→</span>";
+    const homeDuration = $("#homeFocusDuration");
+    if (homeDuration) homeDuration.textContent = (mode === "focus" ? duration : setup.focusMinutes) + " min";
     const progress = $("#timerProgress");
     if (progress) progress.style.strokeDashoffset = String(766.5 * (1 - remaining / (duration * 60)));
     $$(".mode").forEach(button => button.classList.toggle("active", button.dataset.mode === mode));
@@ -292,6 +304,7 @@
       sessions.push({ completedAt: Date.now(), durationMinutes: duration });
       save({ previewSessions: sessions.slice(-100) });
     }
+    updateDashboard();
     paintTimer();
     toast("Session complete. Take a gentle break.");
   }
@@ -355,13 +368,7 @@
 
   // Personal planner — tasks remain in localStorage between preview visits.
   const taskList = $("#taskList");
-  const defaultTasks = [
-    { id: "math", title: "Revise mathematics", detail: "Study · 45 minutes", time: "9:00 AM", completed: true },
-    { id: "science", title: "Finish science notes", detail: "Study · 30 minutes", time: "10:00 AM", completed: true },
-    { id: "creative", title: "Build something creative", detail: "Personal · 60 minutes", time: "4:00 PM", completed: false },
-    { id: "reading", title: "Read for 20 minutes", detail: "Learning · 20 minutes", time: "8:30 PM", completed: false }
-  ];
-  let tasks = Array.isArray(read().tasks) ? read().tasks : defaultTasks;
+  let tasks = Array.isArray(read().tasks) ? read().tasks : [];
   function updateTaskCount() {
     const completed = tasks.filter(task => task.completed).length;
     $("#taskCount").textContent = completed + " of " + tasks.length + " done";
@@ -369,6 +376,12 @@
   }
   function renderTasks() {
     taskList.replaceChildren();
+    if (tasks.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty-note";
+      empty.textContent = "No tasks yet. Add one small next step to begin.";
+      taskList.append(empty);
+    }
     tasks.forEach(task => {
       const row = document.createElement("div");
       row.className = "task-row";
@@ -396,6 +409,179 @@
       taskList.append(row);
     });
     updateTaskCount();
+    renderTaskPreview();
+    updateDashboard();
+  }
+  function renderTaskPreview() {
+    const preview = $("#homeTaskPreview");
+    if (!preview) return;
+    preview.replaceChildren();
+    if (tasks.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty-note";
+      empty.textContent = "No tasks yet. Add one small next step in your planner.";
+      preview.append(empty);
+      return;
+    }
+    tasks.slice(0, 3).forEach(task => {
+      const row = document.createElement("div");
+      row.className = "task-row";
+      const check = document.createElement("span");
+      check.className = "check" + (task.completed ? " checked" : "");
+      check.textContent = task.completed ? "✓" : "";
+      const body = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = task.title;
+      const detail = document.createElement("small");
+      detail.textContent = task.detail || "Personal · No time set";
+      body.append(title, detail);
+      const time = document.createElement("span");
+      time.className = "task-time";
+      time.textContent = task.time || "Today";
+      row.append(check, body, time);
+      preview.append(row);
+    });
+  }
+  function formatMinutes(totalMinutes) {
+    const safe = Math.max(0, Math.floor(totalMinutes));
+    const hours = Math.floor(safe / 60);
+    const minutes = safe % 60;
+    return hours > 0 ? hours + "h " + minutes + "m" : safe + "m";
+  }
+  function updateDashboard() {
+    const state = read();
+    const allSessions = Array.isArray(state.previewSessions) ? state.previewSessions.filter(session =>
+      Number.isFinite(Number(session.completedAt)) && Number.isFinite(Number(session.durationMinutes)) && Number(session.durationMinutes) > 0
+    ) : [];
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const tomorrowStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const todayEnd = tomorrowStartDate.getTime();
+    const todaySessions = allSessions.filter(session => session.completedAt >= todayStart && session.completedAt < todayEnd);
+    const todayMinutes = todaySessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+    const goalHours = Math.min(12, Math.max(1, Number(state.studyHours) || 4));
+    const goalMinutes = Math.round(goalHours * 60);
+    const percent = Math.min(100, Math.round(todayMinutes / goalMinutes * 100));
+    const goalLabel = Number.isInteger(goalHours) ? String(goalHours) : goalHours.toFixed(1);
+
+    const dateLabel = $("#homeDateLabel");
+    if (dateLabel) dateLabel.textContent = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).toUpperCase();
+    const dateChip = $("#homeDateChip");
+    if (dateChip) dateChip.textContent = now.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toUpperCase();
+    const goalValue = $("#homeGoalHours");
+    if (goalValue) goalValue.innerHTML = goalLabel + "<span> hours</span>";
+    const goalBar = $("#homeGoalProgress");
+    if (goalBar) goalBar.style.width = percent + "%";
+    const goalText = $("#homeGoalProgressText");
+    if (goalText) goalText.textContent = formatMinutes(todayMinutes) + " of " + goalLabel + "h completed today";
+    const goalTitle = $("#homeGoalTitle");
+    if (goalTitle) goalTitle.textContent = todayMinutes >= goalMinutes ? "You reached today's target. Take a moment to appreciate that." : "A steady rhythm, built one session at a time.";
+
+    const focusValue = $("#homeFocusTime");
+    if (focusValue) focusValue.textContent = formatMinutes(todayMinutes);
+    const focusCaption = $("#homeFocusCaption");
+    if (focusCaption) focusCaption.textContent = todaySessions.length + " completed session" + (todaySessions.length === 1 ? "" : "s") + " today";
+    const blockedCount = $("#homeBlockedCount");
+    if (blockedCount) blockedCount.textContent = String(blocked.length);
+    const taskCount = $("#homeTaskCount");
+    const completedTasks = tasks.filter(task => task.completed).length;
+    if (taskCount) taskCount.textContent = completedTasks + " / " + tasks.length;
+    const taskCaption = $("#homeTaskCaption");
+    if (taskCaption) taskCaption.textContent = tasks.length === 0 ? "No tasks added yet" : (tasks.length - completedTasks) + " remaining";
+    const sessionCount = $("#homeSessionCount");
+    if (sessionCount) sessionCount.textContent = String(todaySessions.length);
+
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+    const dayTotals = [];
+    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+      const day = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + dayIndex);
+      const start = day.getTime();
+      const end = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+      const daySessions = allSessions.filter(session => session.completedAt >= start && session.completedAt < end);
+      dayTotals.push({ date: day, minutes: daySessions.reduce((sum, session) => sum + session.durationMinutes, 0), count: daySessions.length });
+    }
+    const weekMinutes = dayTotals.reduce((sum, day) => sum + day.minutes, 0);
+    const weekSessions = dayTotals.reduce((sum, day) => sum + day.count, 0);
+    const activeDays = dayTotals.filter(day => day.count > 0).length;
+    const bestDay = dayTotals.reduce((best, day) => day.minutes > (best?.minutes || 0) ? day : best, null);
+    const weekFocus = $("#insightWeekFocus");
+    if (weekFocus) weekFocus.textContent = formatMinutes(weekMinutes);
+    const weekCaption = $("#insightWeekCaption");
+    if (weekCaption) weekCaption.textContent = weekSessions + " completed sessions in the last 7 days";
+    const bestDayNode = $("#insightBestDay");
+    if (bestDayNode) bestDayNode.textContent = bestDay && bestDay.minutes > 0 ? bestDay.date.toLocaleDateString(undefined, { weekday: "long" }) : "—";
+    const bestDayTime = $("#insightBestDayTime");
+    if (bestDayTime) bestDayTime.textContent = bestDay && bestDay.minutes > 0 ? formatMinutes(bestDay.minutes) + " of focus" : "No sessions recorded yet";
+    const insightSessions = $("#insightSessionCount");
+    if (insightSessions) insightSessions.textContent = String(weekSessions);
+    const activeDaysNode = $("#insightActiveDays");
+    if (activeDaysNode) activeDaysNode.textContent = activeDays + " active days this week";
+
+    const chart = $("#insightWeeklyBars");
+    if (chart) {
+      const bars = $(".bar-set", chart);
+      dayTotals.forEach((day, index) => {
+        const bar = bars[index];
+        if (!bar) return;
+        const height = Math.min(100, day.minutes / 240 * 100);
+        const fill = bar.querySelector("div");
+        const value = bar.querySelector("b");
+        const label = bar.querySelector("span");
+        if (fill) fill.style.height = height + "%";
+        if (value) value.textContent = day.minutes > 0 ? formatMinutes(day.minutes) : "0m";
+        if (label) label.textContent = day.date.toLocaleDateString(undefined, { weekday: "short" });
+      });
+    }
+
+    const selectedApps = $("#insightSelectedApps");
+    if (selectedApps) {
+      selectedApps.replaceChildren();
+      if (blocked.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "empty-note";
+        empty.textContent = "Your pause list is empty. Choose apps in the app garden.";
+        selectedApps.append(empty);
+      } else {
+        blocked.forEach(app => {
+          const row = document.createElement("div");
+          row.className = "usage-row";
+          const symbol = document.createElement("span");
+          symbol.className = "app-logo";
+          symbol.textContent = app.slice(0, 1).toUpperCase();
+          const body = document.createElement("div");
+          const title = document.createElement("strong");
+          title.textContent = app;
+          const detail = document.createElement("small");
+          detail.textContent = "Selected for your preview block list";
+          body.append(title, detail);
+          row.append(symbol, body);
+          selectedApps.append(row);
+        });
+      }
+    }
+
+    const totalMinutes = allSessions.reduce((sum, session) => sum + session.durationMinutes, 0);
+    const rewardFocus = $("#rewardsFocusTime");
+    if (rewardFocus) rewardFocus.innerHTML = formatMinutes(totalMinutes) + " <small>TOTAL FOCUS TIME</small>";
+    const focusedDays = new Set(allSessions.map(session => {
+      const date = new Date(session.completedAt);
+      return date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate();
+    })).size;
+    const firstBadge = $("#badgeFirst");
+    if (firstBadge) {
+      firstBadge.classList.toggle("unlocked", allSessions.length > 0);
+      firstBadge.querySelector("b").textContent = allSessions.length > 0 ? "Earned ✓" : "Not yet earned";
+    }
+    const tenHourBadge = $("#badgeTenHours");
+    if (tenHourBadge) {
+      tenHourBadge.classList.toggle("unlocked", totalMinutes >= 600);
+      tenHourBadge.querySelector("b").textContent = totalMinutes >= 600 ? "Earned ✓" : formatMinutes(totalMinutes) + " / 10h";
+    }
+    const sevenDayBadge = $("#badgeSevenDays");
+    if (sevenDayBadge) {
+      sevenDayBadge.classList.toggle("unlocked", focusedDays >= 7);
+      sevenDayBadge.querySelector("b").textContent = focusedDays >= 7 ? "Earned ✓" : focusedDays + " / 7 active days";
+    }
   }
   taskList.addEventListener("click", event => {
     const row = event.target.closest(".task-row");
@@ -418,6 +604,7 @@
     toast("A new step has been added");
   });
   renderTasks();
+  updateDashboard();
 
   // Schedules are interactive preview rules; they do not schedule Android blocking.
   const scheduleMain = $(".schedule-main");
@@ -480,6 +667,20 @@
   });
 
   // Preferences and data export.
+  const goalSlider = $("#settingsStudyGoal");
+  if (goalSlider) {
+    goalSlider.value = String(setup.studyHours);
+    const goalValue = $("#settingsStudyGoalValue");
+    const updateGoal = () => {
+      setup.studyHours = Number(goalSlider.value);
+      const label = Number.isInteger(setup.studyHours) ? String(setup.studyHours) : setup.studyHours.toFixed(1);
+      if (goalValue) goalValue.textContent = label + "h";
+      save({ studyHours: setup.studyHours });
+      updateDashboard();
+    };
+    goalSlider.addEventListener("input", updateGoal);
+    updateGoal();
+  }
   const intent = $("#focusIntent");
   intent.value = read().focusIntent || "";
   intent.addEventListener("change", () => save({ focusIntent: intent.value }));
