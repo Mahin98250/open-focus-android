@@ -420,10 +420,10 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     }
                                 }
                                 if (scannedApps.size > visibleApps.size) {
-                                    Text("Showing the first ${visibleApps.size} apps. You can manage the complete app list later in App Garden.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                    Text("Showing the first ${visibleApps.size} apps. You can manage the complete app list later in Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                                 }
                                 if (suggested.isEmpty()) {
-                                    Text("No familiar social or entertainment apps were recognised. You can select apps later from App Garden.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("No familiar social or entertainment apps were recognised. You can select apps later from Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
