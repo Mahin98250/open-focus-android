@@ -64,10 +64,10 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
     val goalProgress = if (goalMillis > 0L) {
         (todayFocusMillis.toFloat() / goalMillis).coerceIn(0f, 1f)
     } else 0f
-    val animatedGoalProgress by animateFloatAsState(
+    val animatedGoalProgress = animateFloatAsState(
         targetValue = goalProgress,
         label = "daily-focus-goal-progress"
-    )
+    ).value
     Column(
         modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
