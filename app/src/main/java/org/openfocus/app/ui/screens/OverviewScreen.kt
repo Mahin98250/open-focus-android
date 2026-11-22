@@ -33,6 +33,14 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
     val sessions = remember(context) { FocusSessionHistoryStore(context).load() }
     val selectedAppCount = remember(context) { AppBlockStore(context).blockedPackages().size }
     val tasks = remember(context) { PlannerStore(context).load() }
+    val dailyStudyGoal = remember(context) {
+        context.getSharedPreferences("app_onboarding", android.content.Context.MODE_PRIVATE)
+            .getFloat("daily_study_goal_hours", 0f)
+    }
+    val focusPriorities = remember(context) {
+        context.getSharedPreferences("app_onboarding", android.content.Context.MODE_PRIVATE)
+            .getStringSet("focus_priorities", emptySet())?.toSet().orEmpty()
+    }
     val completedTaskCount = tasks.count { it.completed }
     val focusMillis = sessions.sumOf { it.durationMillis }
     Column(
@@ -50,6 +58,19 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
                 Text("One thing at a time.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Text("Give your best energy to what matters most.", color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Button(onClick = { onNavigate("focus") }) { Text("Start focusing  →") }
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("THE GOAL YOU CHOSE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                Text(
+                    if (dailyStudyGoal > 0f) String.format(java.util.Locale.ROOT, "%.1f hours a day", dailyStudyGoal) else "Choose a daily study goal",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                if (focusPriorities.isNotEmpty()) {
+                    Text(focusPriorities.joinToString(" · "), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
         Text("YOUR DAY AT A GLANCE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
