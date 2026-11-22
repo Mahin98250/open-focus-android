@@ -42,12 +42,20 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                 FocusCompletionNotification.show(this@AppBlockingAccessibilityService)
             }
             val scheduleActive = BlockScheduleStore(this@AppBlockingAccessibilityService).isBlockingNow()
-            val dailyLimitActive = lastBlockedPackage?.let {
+            val lastPackage = lastBlockedPackage
+            val selectedForBlocking = lastPackage?.let {
+                AppBlockStore(this@AppBlockingAccessibilityService).isBlocked(it)
+            } ?: false
+            val dailyLimitActive = lastPackage?.let {
                 DailyAppLimitStore(this@AppBlockingAccessibilityService).isLimitReached(it)
             } ?: false
-            if (!focusActive && !scheduleActive && !dailyLimitActive) {
+            val restrictionStillActive = ((focusActive || scheduleActive) && selectedForBlocking) || dailyLimitActive
+            if (!restrictionStillActive) {
                 removeBlockerOverlay()
             } else if (blockerOverlay != null) {
+                // Keep the full-screen guard attached while the blocked app is underneath.
+                // Some launchers/Android builds emit an intermediate window event for
+                // the launcher or system UI; those events must not dismiss the guard.
                 mainHandler.postDelayed(this, WATCHDOG_INTERVAL_MILLIS)
             }
         }
@@ -72,7 +80,15 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         val dailyLimitReached = DailyAppLimitStore(this).isLimitReached(foregroundPackage)
         val blockedBySession = (focusActive || scheduleActive) && selectedForBlocking
         if (!blockedBySession && !dailyLimitReached) {
-            removeBlockerOverlay()
+            // Do not dismiss an already-visible guard merely because Android reports
+            // a transient launcher/system window event. The watchdog checks whether
+            // the original package is still restricted and removes it when the rule ends.
+            if (blockerOverlay == null) return
+            val guardedPackage = lastBlockedPackage ?: return
+            val stillRestricted = (
+                (focusActive || scheduleActive) && AppBlockStore(this).isBlocked(guardedPackage)
+            ) || DailyAppLimitStore(this).isLimitReached(guardedPackage)
+            if (!stillRestricted) removeBlockerOverlay()
             return
         }
 
