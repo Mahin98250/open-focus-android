@@ -42,7 +42,6 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     private val overlayWatchdog = object : Runnable {
         override fun run() {
-            val timerStore = timerStore
             val focusActive = timerStore.load().isRunning
             if (!focusActive && timerStore.takeCompletionNotification()) {
                 FocusCompletionNotification.show(this@AppBlockingAccessibilityService)
@@ -76,7 +75,6 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         // Ignore our own overlay/app windows; only evaluate other foreground apps.
         if (foregroundPackage == packageName) return
 
-        val timerStore = timerStore
         val focusActive = timerStore.load().isRunning
         if (!focusActive && timerStore.takeCompletionNotification()) {
             FocusCompletionNotification.show(this)
