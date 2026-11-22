@@ -79,7 +79,7 @@ private val welcomePages = listOf(
         "TAKE BACK YOUR ATTENTION",
         "Your time deserves more than endless scrolling.",
         "Create a calmer relationship with your phone. Make room for studying, sleep, hobbies and the people around you.",
-        "✿",
+        "◎",
         "Let's begin"
     ),
     WelcomePage(
@@ -93,7 +93,7 @@ private val welcomePages = listOf(
         "YOUR SPACE. YOUR RULES.",
         "A private focus companion.",
         "No advertisements, no subscriptions and no account required. Your focus choices stay on your device.",
-        "❀",
+        "◌",
         "Personalise my experience"
     )
 )
@@ -191,7 +191,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("✿", color = MaterialTheme.colorScheme.primary, fontSize = 28.sp)
+                        Text("◎", color = MaterialTheme.colorScheme.primary, fontSize = 28.sp)
                         Spacer(Modifier.width(8.dp))
                         Text("Open Focus", fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp, style = MaterialTheme.typography.titleLarge)
                     }
@@ -444,9 +444,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     ),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text("✿", fontSize = 94.sp, color = MaterialTheme.colorScheme.primary)
+                                    Text("◎", fontSize = 94.sp, color = MaterialTheme.colorScheme.primary)
                                 }
-                                Text("YOUR PLAN IS TAKING ROOT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+                                Text("YOUR FOCUS PLAN IS READY", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
                                 Text("A little more room for what matters.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
                                 Text(
                                     "Your starting plan is ready. You can change every choice later.",
