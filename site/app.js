@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-  const storageKey = "focus-garden-preview-v2";
+  const storageKey = "open-focus-preview-v3";
 
   function read() {
     try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); }
@@ -209,7 +209,7 @@
     if (!target) return;
     $$(".page").forEach(node => node.classList.toggle("active", node === target));
     $$("[data-page]").forEach(node => node.classList.toggle("active", node.dataset.page === page));
-    const labels = { home: "Overview", focus: "Focus room", block: "App garden", schedule: "Schedules", insights: "Insights", planner: "My planner", rewards: "Growth & rewards", settings: "Settings" };
+    const labels = { home: "Overview", focus: "Focus room", block: "App blocking", schedule: "Schedules", insights: "Insights", planner: "My planner", rewards: "Growth & rewards", settings: "Settings" };
     $("#pageCrumb").textContent = labels[page] || "Overview";
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -540,7 +540,7 @@
       if (blocked.length === 0) {
         const empty = document.createElement("p");
         empty.className = "empty-note";
-        empty.textContent = "Your pause list is empty. Choose apps in the app garden.";
+        empty.textContent = "Your pause list is empty. Choose apps in the app blocking.";
         selectedApps.append(empty);
       } else {
         blocked.forEach(app => {
@@ -730,7 +730,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "focus-garden-preview-data.json";
+    link.download = "open-focus-preview-data.json";
     link.click();
     URL.revokeObjectURL(url);
     toast("Your preview data export is ready");
