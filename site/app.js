@@ -547,7 +547,7 @@
           const row = document.createElement("div");
           row.className = "usage-row";
           const symbol = document.createElement("span");
-          const logoFiles = { Instagram: "instagram", Snapchat: "snapchat", YouTube: "youtube", Facebook: "facebook", TikTok: "tiktok", X: "x", Reddit: "reddit", Discord: "discord" };
+          const logoFiles = { Instagram: "instagram", Snapchat: "snapchat", YouTube: "youtube", Facebook: "facebook", TikTok: "tiktok", X: "x", Reddit: "reddit", Discord: "discord", Netflix: "netflix", Pinterest: "pinterest" };
           const logoFile = logoFiles[app];
           symbol.className = "app-logo" + (logoFile ? " " + (logoFile === "x" ? "x-logo" : logoFile) : "");
           if (logoFile) {
