@@ -20,6 +20,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -467,9 +468,48 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
 
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    val context = LocalContext.current
+    val onboardingPreferences = remember {
+        context.getSharedPreferences("app_onboarding", android.content.Context.MODE_PRIVATE)
+    }
+    var goalHours by remember {
+        mutableStateOf(
+            onboardingPreferences.getFloat("daily_study_goal_hours", 3f).coerceIn(1f, 12f)
+        )
+    }
+    var goalSaved by remember { mutableStateOf(false) }
+
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("YOUR APP, YOUR RULES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
         Text("Make it yours.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("DAILY STUDY TARGET", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
+                Text(
+                    if (goalHours % 1f == 0f) "${goalHours.toInt()} hours a day" else "${"%.1f".format(java.util.Locale.ROOT, goalHours)} hours a day",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Slider(
+                    value = goalHours,
+                    onValueChange = {
+                        goalHours = it
+                        goalSaved = false
+                    },
+                    valueRange = 1f..12f,
+                    steps = 10
+                )
+                Text("Your dashboard counts completed focus sessions towards this target. Change it whenever your schedule changes.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodySmall)
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        onboardingPreferences.edit().putFloat("daily_study_goal_hours", goalHours).apply()
+                        goalSaved = true
+                    }
+                ) { Text(if (goalSaved) "Target saved" else "Save daily target") }
+            }
+        }
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("PRIVACY PROMISE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
