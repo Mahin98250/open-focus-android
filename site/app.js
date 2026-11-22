@@ -302,7 +302,7 @@
     if (mode === "focus") {
       const sessions = Array.isArray(read().previewSessions) ? read().previewSessions : [];
       sessions.push({ completedAt: Date.now(), durationMinutes: duration });
-      save({ previewSessions: sessions.slice(-100) });
+      save({ previewSessions: sessions.slice(-500) });
     }
     updateDashboard();
     paintTimer();
@@ -368,7 +368,8 @@
 
   // Personal planner — tasks remain in localStorage between preview visits.
   const taskList = $("#taskList");
-  let tasks = Array.isArray(read().tasks) ? read().tasks : [];
+  const seededTaskIds = new Set(["math", "science", "creative", "reading"]);
+  let tasks = Array.isArray(read().tasks) ? read().tasks.filter(task => !seededTaskIds.has(task.id)) : [];
   function updateTaskCount() {
     const completed = tasks.filter(task => task.completed).length;
     $("#taskCount").textContent = completed + " of " + tasks.length + " done";
