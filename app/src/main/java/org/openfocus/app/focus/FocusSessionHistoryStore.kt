@@ -22,7 +22,7 @@ class FocusSessionHistoryStore(context: Context) {
                 val item = array.optJSONObject(index) ?: return@mapNotNull null
                 val completedAt = item.optLong("completed_at", 0L)
                 val duration = item.optLong("duration", 0L)
-                val intention = item.optString("intention", "").trim().takeIf { it.isNotEmpty() }
+                val intention = (item.opt("intention") as? String)?.trim()?.takeIf { it.isNotEmpty() }
                 if (completedAt <= 0L || duration <= 0L) null
                 else CompletedFocusSession(completedAt, duration, intention)
             }.sortedBy { it.completedAtEpochMillis }
@@ -46,12 +46,11 @@ class FocusSessionHistoryStore(context: Context) {
     private fun persist(sessions: List<CompletedFocusSession>) {
         val array = JSONArray()
         sessions.forEach { session ->
-            array.put(
-                JSONObject()
-                    .put("completed_at", session.completedAtEpochMillis)
-                    .put("duration", session.durationMillis)
-                    .put("intention", session.intention ?: JSONObject.NULL)
-            )
+            val item = JSONObject()
+                .put("completed_at", session.completedAtEpochMillis)
+                .put("duration", session.durationMillis)
+            session.intention?.let { item.put("intention", it) }
+            array.put(item)
         }
         preferences.edit().putString(KEY_SESSIONS, array.toString()).apply()
     }
