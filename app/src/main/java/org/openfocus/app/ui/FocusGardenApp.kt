@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.openfocus.app.ui.screens.AppGardenScreen
 import org.openfocus.app.ui.screens.FocusRoomScreen
 import org.openfocus.app.ui.screens.GrowthScreen
