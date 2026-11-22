@@ -358,7 +358,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Text("YOUR PHONE, UNDER YOUR CONTROL", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                                 Text("Let's find your distractions.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                                 Text(
-                                    "We scanned the apps that appear in your launcher. Review the suggestions and choose which apps you want paused during focus time.",
+                                    "We scanned the apps that appear in your launcher. Review the suggestions and choose which apps you want paused during focus time. Choosing Instagram blocks the whole app, not only Reels; the same applies to YouTube and Shorts.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
@@ -374,6 +374,18 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 }
                                 if (suggested.isNotEmpty()) {
                                     Text("SUGGESTED DISTRACTIONS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                                    Row(
+                                        Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        TextButton(onClick = { selectedApps = suggested.map { it.packageName }.toSet() }) {
+                                            Text("Select suggestions")
+                                        }
+                                        TextButton(onClick = { selectedApps = emptySet() }) {
+                                            Text("Clear selection")
+                                        }
+                                    }
                                 }
                                 visibleApps.forEach { app ->
                                     val checked = app.packageName in selectedApps
