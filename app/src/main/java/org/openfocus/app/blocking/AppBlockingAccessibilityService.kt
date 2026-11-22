@@ -42,7 +42,10 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                 FocusCompletionNotification.show(this@AppBlockingAccessibilityService)
             }
             val scheduleActive = BlockScheduleStore(this@AppBlockingAccessibilityService).isBlockingNow()
-            if (!focusActive && !scheduleActive) {
+            val dailyLimitActive = lastBlockedPackage?.let {
+                DailyAppLimitStore(this@AppBlockingAccessibilityService).isLimitReached(it)
+            } ?: false
+            if (!focusActive && !scheduleActive && !dailyLimitActive) {
                 removeBlockerOverlay()
             } else if (blockerOverlay != null) {
                 mainHandler.postDelayed(this, WATCHDOG_INTERVAL_MILLIS)
@@ -61,7 +64,9 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         }
         val scheduleActive = BlockScheduleStore(this).isBlockingNow()
         val selectedForBlocking = AppBlockStore(this).isBlocked(foregroundPackage)
-        if ((!focusActive && !scheduleActive) || !selectedForBlocking) {
+        val dailyLimitReached = DailyAppLimitStore(this).isLimitReached(foregroundPackage)
+        val blockedBySession = (focusActive || scheduleActive) && selectedForBlocking
+        if (!blockedBySession && !dailyLimitReached) {
             removeBlockerOverlay()
             return
         }
@@ -74,10 +79,10 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
         lastBlockedPackage = foregroundPackage
         lastBlockedAtMillis = now
-        showBlockerOverlay(foregroundPackage)
+        showBlockerOverlay(foregroundPackage, dailyLimitReached)
     }
 
-    private fun showBlockerOverlay(blockedPackage: String) {
+    private fun showBlockerOverlay(blockedPackage: String, dailyLimitReached: Boolean) {
         if (blockerOverlay != null) return
 
         val appLabel = runCatching {
@@ -120,7 +125,11 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             setPadding(0, dp(12), 0, dp(10))
         }
         val message = TextView(this).apply {
-            text = appLabel + " is on your pause list right now. Take a breath, then choose what you want to do next."
+            text = if (dailyLimitReached) {
+                "You have reached today's app limit for " + appLabel + ". Your limit resets at local midnight."
+            } else {
+                appLabel + " is on your pause list right now. Take a breath, then choose what you want to do next."
+            }
             textSize = 15f
             setTextColor(Color.rgb(190, 207, 194))
             gravity = Gravity.CENTER
