@@ -67,9 +67,13 @@ fun FocusGardenApp() {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("✿", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineMedium)
-                        Spacer(Modifier.width(9.dp))
-                        Text("focus garden", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Open Focus",
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.7).sp,
+                            style = MaterialTheme.typography.titleLarge
+                        )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { currentRoute = "insights" }) { Text("Insights") }
