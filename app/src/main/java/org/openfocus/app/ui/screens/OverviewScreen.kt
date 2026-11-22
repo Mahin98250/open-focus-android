@@ -13,10 +13,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.remember
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +28,7 @@ import org.openfocus.app.focus.FocusSessionHistoryStore
 import org.openfocus.app.planner.PlannerStore
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Calendar
 
 @Composable
 fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) {
@@ -42,7 +45,29 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
             .getStringSet("focus_priorities", emptySet())?.toSet().orEmpty()
     }
     val completedTaskCount = tasks.count { it.completed }
-    val focusMillis = sessions.sumOf { it.durationMillis }
+    val todayRange = remember {
+        val calendar = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val start = calendar.timeInMillis
+        calendar.add(Calendar.DAY_OF_YEAR, 1)
+        start to calendar.timeInMillis
+    }
+    val todaySessions = sessions.filter {
+        it.completedAtEpochMillis >= todayRange.first && it.completedAtEpochMillis < todayRange.second
+    }
+    val todayFocusMillis = todaySessions.sumOf { it.durationMillis }
+    val goalMillis = (dailyStudyGoal * 3_600_000f).toLong().coerceAtLeast(0L)
+    val goalProgress = if (goalMillis > 0L) {
+        (todayFocusMillis.toFloat() / goalMillis).coerceIn(0f, 1f)
+    } else 0f
+    val animatedGoalProgress by animateFloatAsState(
+        targetValue = goalProgress,
+        label = "daily-focus-goal-progress"
+    )
     Column(
         modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -73,9 +98,38 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
                 }
             }
         }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("TODAY'S FOCUS PROGRESS", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                if (goalMillis > 0L) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(formatFocusDuration(todayFocusMillis), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text("${(goalProgress * 100).toInt()}%", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                    LinearProgressIndicator(
+                        progress = animatedGoalProgress,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
+                    )
+                    Text(
+                        if (todayFocusMillis >= goalMillis) "Daily target reached. Be proud of the time you protected today."
+                        else "${formatFocusDuration(goalMillis - todayFocusMillis)} to reach your ${dailyStudyGoal.toHoursLabel()} target · ${todaySessions.size} completed sessions",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    Text("Choose a daily target to make your progress visible.", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    TextButton(onClick = { onNavigate("settings") }) { Text("Set daily target", color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                }
+            }
+        }
         Text("YOUR DAY AT A GLANCE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            MetricCard("FOCUS TIME", formatFocusDuration(focusMillis), "Completed sessions", Modifier.weight(1f))
+            MetricCard("TODAY'S FOCUS", formatFocusDuration(todayFocusMillis), "${todaySessions.size} completed sessions", Modifier.weight(1f))
             MetricCard("BLOCK LIST", selectedAppCount.toString(), "Apps you selected", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -115,6 +169,9 @@ private fun MetricCard(label: String, value: String, caption: String, modifier: 
         }
     }
 }
+
+private fun Float.toHoursLabel(): String =
+    if (this % 1f == 0f) "${toInt()}h/day" else "${"%.1f".format(java.util.Locale.ROOT, this)}h/day"
 
 private fun formatFocusDuration(durationMillis: Long): String {
     val totalMinutes = durationMillis / 60_000L
