@@ -152,7 +152,7 @@ fun ScheduleScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
         modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        TextButton(onClick = onBack) { Text("← App garden") }
+        TextButton(onClick = onBack) { Text("← App blocking") }
         Text("MAKE SPACE AUTOMATIC", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
         Text("Find your rhythm.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         Text(
@@ -263,7 +263,7 @@ fun ScheduleScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
             }
         }
         Text(
-            "A schedule only blocks apps in your selected app garden and only while the Android accessibility service is enabled. You can turn schedules off or disable access in Android Settings. Blocking is not tamper-proof.",
+            "A schedule only blocks apps in your selected blocked-app list and only while the Android accessibility service is enabled. You can turn schedules off or disable access in Android Settings. Blocking is not tamper-proof.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall
         )
