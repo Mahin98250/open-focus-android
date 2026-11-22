@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -192,7 +193,7 @@ private fun InstalledAppIcon(packageName: String, label: String) {
         Image(
             bitmap = icon,
             contentDescription = "$label app icon",
-            modifier = Modifier.padding(end = 2.dp).then(Modifier.size(44.dp)),
+            modifier = Modifier.size(44.dp),
             contentScale = ContentScale.Fit
         )
     } else {
