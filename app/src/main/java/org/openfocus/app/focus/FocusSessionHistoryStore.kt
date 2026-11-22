@@ -6,7 +6,8 @@ import org.json.JSONObject
 
 data class CompletedFocusSession(
     val completedAtEpochMillis: Long,
-    val durationMillis: Long
+    val durationMillis: Long,
+    val intention: String? = null
 )
 
 /** Stores local, completed focus sessions without any account or network dependency. */
@@ -21,17 +22,18 @@ class FocusSessionHistoryStore(context: Context) {
                 val item = array.optJSONObject(index) ?: return@mapNotNull null
                 val completedAt = item.optLong("completed_at", 0L)
                 val duration = item.optLong("duration", 0L)
+                val intention = item.optString("intention", "").trim().takeIf { it.isNotEmpty() }
                 if (completedAt <= 0L || duration <= 0L) null
-                else CompletedFocusSession(completedAt, duration)
+                else CompletedFocusSession(completedAt, duration, intention)
             }.sortedBy { it.completedAtEpochMillis }
         }.getOrDefault(emptyList())
     }
 
-    fun recordCompleted(durationMillis: Long, completedAtEpochMillis: Long) {
+    fun recordCompleted(durationMillis: Long, completedAtEpochMillis: Long, intention: String? = null) {
         if (durationMillis <= 0L || completedAtEpochMillis <= 0L) return
         val sessions = load().toMutableList()
         if (sessions.any { it.completedAtEpochMillis == completedAtEpochMillis }) return
-        sessions.add(CompletedFocusSession(completedAtEpochMillis, durationMillis))
+        sessions.add(CompletedFocusSession(completedAtEpochMillis, durationMillis, intention?.trim()?.take(120)?.takeIf { it.isNotEmpty() }))
         persist(sessions.sortedBy { it.completedAtEpochMillis }.takeLast(MAX_SESSIONS))
     }
 
@@ -48,6 +50,7 @@ class FocusSessionHistoryStore(context: Context) {
                 JSONObject()
                     .put("completed_at", session.completedAtEpochMillis)
                     .put("duration", session.durationMillis)
+                    .put("intention", session.intention ?: JSONObject.NULL)
             )
         }
         preferences.edit().putString(KEY_SESSIONS, array.toString()).apply()

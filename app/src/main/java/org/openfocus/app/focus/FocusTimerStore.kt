@@ -7,7 +7,8 @@ data class FocusTimerSnapshot(
     val endAtEpochMillis: Long?,
     val remainingMillis: Long,
     val totalDurationMillis: Long,
-    val isCompleted: Boolean
+    val isCompleted: Boolean,
+    val intention: String? = null
 )
 
 /**
@@ -27,14 +28,17 @@ class FocusTimerStore(context: Context) {
         val storedDuration = preferences.getLong(KEY_DURATION, DEFAULT_DURATION_MILLIS)
             .coerceIn(MIN_DURATION_MILLIS, MAX_DURATION_MILLIS)
         val completed = preferences.getBoolean(KEY_COMPLETED, false)
+        val storedIntention = preferences.getString(KEY_INTENTION, null)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
 
         if (running && endAt != null) {
             val remaining = remainingMillisUntil(endAt, nowEpochMillis)
             if (remaining == 0L) {
                 finish(nowEpochMillis)
-                return FocusTimerSnapshot(false, null, 0L, storedDuration, true)
+                return FocusTimerSnapshot(false, null, 0L, storedDuration, true, null)
             }
-            return FocusTimerSnapshot(true, endAt, remaining, storedDuration, false)
+            return FocusTimerSnapshot(true, endAt, remaining, storedDuration, false, storedIntention)
         }
 
         // Recover safely from incomplete/corrupt persisted running state.
@@ -45,12 +49,13 @@ class FocusTimerStore(context: Context) {
                 .apply()
             alarmScheduler.cancel()
         }
-        return FocusTimerSnapshot(false, null, storedRemaining, storedDuration, completed)
+        return FocusTimerSnapshot(false, null, storedRemaining, storedDuration, completed, storedIntention)
     }
 
     fun start(
         nowEpochMillis: Long = System.currentTimeMillis(),
-        durationMillis: Long? = null
+        durationMillis: Long? = null,
+        intention: String? = null
     ) {
         val current = load(nowEpochMillis)
         val totalDuration = (durationMillis ?: current.totalDurationMillis)
@@ -71,7 +76,11 @@ class FocusTimerStore(context: Context) {
             .putLong(KEY_DURATION, totalDuration)
             .putBoolean(KEY_COMPLETED, false)
             .putBoolean(KEY_NOTIFICATION_PENDING, false)
-            .apply()
+            .apply {
+                if (intention != null) {
+                    putString(KEY_INTENTION, intention.trim().take(MAX_INTENTION_LENGTH))
+                }
+            }
         alarmScheduler.schedule(endAt)
     }
 
@@ -96,6 +105,7 @@ class FocusTimerStore(context: Context) {
             .putLong(KEY_DURATION, safeDuration)
             .putBoolean(KEY_COMPLETED, false)
             .putBoolean(KEY_NOTIFICATION_PENDING, false)
+            .remove(KEY_INTENTION)
             .apply()
         alarmScheduler.cancel()
     }
@@ -111,8 +121,11 @@ class FocusTimerStore(context: Context) {
             .coerceIn(MIN_DURATION_MILLIS, MAX_DURATION_MILLIS)
 
         val completedOnTime = wasRunning && endAt > 0L && endAt <= nowEpochMillis
+        val intention = preferences.getString(KEY_INTENTION, null)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
         if (completedOnTime) {
-            sessionHistory.recordCompleted(duration, endAt)
+            sessionHistory.recordCompleted(duration, endAt, intention)
         }
 
         preferences.edit()
@@ -121,6 +134,7 @@ class FocusTimerStore(context: Context) {
             .putLong(KEY_REMAINING, 0L)
             .putBoolean(KEY_COMPLETED, true)
             .putBoolean(KEY_NOTIFICATION_PENDING, completedOnTime || preferences.getBoolean(KEY_NOTIFICATION_PENDING, false))
+            .remove(KEY_INTENTION)
             .apply()
         alarmScheduler.cancel()
     }
@@ -148,6 +162,8 @@ class FocusTimerStore(context: Context) {
         private const val KEY_DURATION = "duration"
         private const val KEY_COMPLETED = "completed"
         private const val KEY_NOTIFICATION_PENDING = "notification_pending"
+        private const val KEY_INTENTION = "session_intention"
+        private const val MAX_INTENTION_LENGTH = 120
     }
 }
 

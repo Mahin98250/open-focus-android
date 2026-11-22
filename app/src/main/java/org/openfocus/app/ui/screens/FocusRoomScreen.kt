@@ -66,7 +66,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     var remaining by remember { mutableStateOf(snapshot.remainingMillis) }
     var selectedMinutes by remember { mutableIntStateOf((snapshot.totalDurationMillis / 60_000L).toInt()) }
     var customMinutesText by remember { mutableStateOf("") }
-    var intention by remember { mutableStateOf("") }
+    var intention by remember { mutableStateOf(initialSnapshot.intention.orEmpty()) }
 
     LaunchedEffect(snapshot.isRunning, snapshot.endAtEpochMillis) {
         while (snapshot.isRunning) {
@@ -91,9 +91,9 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     val progressColor = MaterialTheme.colorScheme.primary
     val startOrResume: () -> Unit = {
         if (snapshot.isCompleted || snapshot.remainingMillis <= 0L) {
-            store.start(durationMillis = selectedMinutes * 60_000L)
+            store.start(durationMillis = selectedMinutes * 60_000L, intention = intention.trim())
         } else {
-            store.start()
+            store.start(intention = intention.trim())
         }
         snapshot = store.load()
         remaining = snapshot.remainingMillis
@@ -211,13 +211,15 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                 Text("SET AN INTENTION", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 OutlinedTextField(
                     value = intention,
-                    onValueChange = { intention = it },
+                    onValueChange = { intention = it.take(120) },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("What deserves your attention?") },
-                    singleLine = true
+                    singleLine = true,
+                    enabled = !snapshot.isRunning
                 )
                 Text(
-                    "Selected apps are redirected during this focus timer or an active schedule when the accessibility service is enabled. Android may delay background completion notifications to save battery.",
+                    if (snapshot.isRunning) "Your intention is saved with this session. Pause to edit it before resuming."
+                    else "Your intention is saved with the completed session in local history. Selected apps are redirected during this focus timer or an active schedule when the accessibility service is enabled.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
