@@ -172,6 +172,7 @@
     });
     $("#onboarding").classList.add("hidden");
     $("#appShell").classList.remove("hidden");
+    blocked = setup.blockedApps.slice();
     go("home");
     renderBlocked();
     toast("Your personal focus space is ready");
