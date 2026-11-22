@@ -103,10 +103,12 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             }
         }
 
-        val flower = TextView(this).apply {
-            text = "✿"
-            textSize = 54f
-            setTextColor(Color.rgb(183, 230, 196))
+        val wordmark = TextView(this).apply {
+            text = "Open Focus"
+            textSize = 27f
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            letterSpacing = -0.025f
+            setTextColor(Color.rgb(195, 235, 201))
             gravity = Gravity.CENTER
         }
         val heading = TextView(this).apply {
@@ -135,7 +137,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         }
 
 
-        panel.addView(flower, matchWrap())
+        panel.addView(wordmark, matchWrap())
         panel.addView(heading, matchWrap())
         panel.addView(message, matchWrap())
         panel.addView(leaveButton, buttonLayoutParams())
