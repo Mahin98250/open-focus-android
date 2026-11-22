@@ -21,6 +21,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -42,6 +45,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.openfocus.app.blocking.AppBlockStore
+import org.openfocus.app.blocking.DailyAppLimitStore
 import org.openfocus.app.blocking.AppBlockingAccessibilityService
 
 private data class LaunchableApp(val packageName: String, val label: String)
@@ -50,8 +54,12 @@ private data class LaunchableApp(val packageName: String, val label: String)
 fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     val context = LocalContext.current
     val store = remember { AppBlockStore(context) }
+    val dailyLimitStore = remember { DailyAppLimitStore(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
     var blockedPackages by remember { mutableStateOf(store.blockedPackages()) }
+    var dailyLimits by remember { mutableStateOf(dailyLimitStore.limitsMinutes()) }
+    var expandedLimitPackage by remember { mutableStateOf<String?>(null) }
+    var usageAccessEnabled by remember { mutableStateOf(dailyLimitStore.hasUsageAccess()) }
     var serviceEnabled by remember { mutableStateOf(isBlockingServiceEnabled(context)) }
     val disclosurePreferences = remember { context.getSharedPreferences("app_block_disclosure", Context.MODE_PRIVATE) }
     var disclosureAccepted by remember { mutableStateOf(disclosurePreferences.getBoolean("accessibility_disclosure_accepted", false)) }
@@ -74,6 +82,8 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             if (event == Lifecycle.Event.ON_RESUME) {
                 serviceEnabled = isBlockingServiceEnabled(context)
                 blockedPackages = store.blockedPackages()
+                dailyLimits = dailyLimitStore.limitsMinutes()
+                usageAccessEnabled = dailyLimitStore.hasUsageAccess()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -125,7 +135,22 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                 Text("Selected apps", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text(blockedPackages.size.toString() + " selected · stored only on this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            androidx.compose.material3.TextButton(onClick = onSchedules) { Text("Schedules") }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onSchedules) { Text("Schedules") }
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("DAILY APP LIMITS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                Text(
+                    if (usageAccessEnabled) "Daily limits are active and measured from Android's local usage totals." else "Allow Usage Access to enforce daily time limits. Usage stays on this device.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }) {
+                    Text(if (usageAccessEnabled) "Review Usage Access" else "Enable Usage Access")
+                }
+            }
         }
         if (installedApps.isEmpty()) {
             Text("No launchable apps were found. Try again after checking Android app visibility settings.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -145,13 +170,54 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                                 Text(app.label, fontWeight = FontWeight.SemiBold)
                                 Text(app.packageName, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
                             }
-                            Switch(
-                                checked = app.packageName in blockedPackages,
-                                onCheckedChange = { selected ->
-                                    store.setBlocked(app.packageName, selected)
-                                    blockedPackages = store.blockedPackages()
+                            Column(horizontalAlignment = Alignment.End) {
+                                Switch(
+                                    checked = app.packageName in blockedPackages,
+                                    onCheckedChange = { selected ->
+                                        store.setBlocked(app.packageName, selected)
+                                        blockedPackages = store.blockedPackages()
+                                    }
+                                )
+                                Box {
+                                    TextButton(onClick = { expandedLimitPackage = app.packageName }) {
+                                        val minutes = dailyLimits[app.packageName]
+                                        Text(
+                                            when {
+                                                minutes == null -> "No limit"
+                                                minutes < 60 -> "${minutes}m/day"
+                                                minutes % 60 == 0 -> "${minutes / 60}h/day"
+                                                else -> "${minutes / 60}h ${minutes % 60}m"
+                                            },
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = expandedLimitPackage == app.packageName,
+                                        onDismissRequest = { expandedLimitPackage = null }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text("No daily limit") },
+                                            onClick = {
+                                                dailyLimitStore.setLimit(app.packageName, null)
+                                                dailyLimits = dailyLimitStore.limitsMinutes()
+                                                expandedLimitPackage = null
+                                            }
+                                        )
+                                        listOf(15, 30, 60, 90, 120, 180, 240).forEach { minutes ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(if (minutes < 60) "${minutes} minutes / day" else "${minutes / 60}${if (minutes % 60 == 0) "" else ".5"} hours / day")
+                                                },
+                                                onClick = {
+                                                    dailyLimitStore.setLimit(app.packageName, minutes)
+                                                    dailyLimits = dailyLimitStore.limitsMinutes()
+                                                    expandedLimitPackage = null
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
-                            )
+                            }
                         }
                     }
                 }
