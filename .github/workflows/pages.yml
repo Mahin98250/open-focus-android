@@ -31,7 +31,10 @@ jobs:
       - name: Upload preview site
         uses: actions/upload-pages-artifact@v3
         with:
+          name: open-focus-pages
           path: site
       - name: Deploy preview
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: open-focus-pages
