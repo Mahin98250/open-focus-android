@@ -28,7 +28,7 @@
   const welcomeSteps = [
     ["A LITTLE SPACE FOR YOU", "Your attention<br>deserves a garden.", "Make room for the things you care about. We'll help the noisy apps take a little step back.", "◎", "Let's begin"],
     ["GENTLE, NOT GUILTY", "Build habits<br>that feel like you.", "Choose your focus rhythm, set kind boundaries and make steady progress—one small session at a time.", "◌", "Continue"],
-    ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required. Your personal focus choices stay on this device.", "◉", "Personalise my experience"]
+    ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required. Your personal focus choices stay on this device.", "◉", "Scan my apps"]
   ];
   const previewApps = [
     { name: "Instagram", logo: "instagram", category: "Social · Reels", suggested: true },
@@ -82,12 +82,18 @@
 
     let eyebrow = "", title = "", description = "", html = "", action = "";
     if (intro === 3) {
+      eyebrow = "YOUR PHONE, UNDER YOUR CONTROL";
+      title = "Let's find your distractions.";
+      description = "Review these suggested apps and choose which ones should pause during focus time.";
+      html = renderScanner();
+      action = "Continue with selected apps";
+    } else if (intro === 4) {
       eyebrow = "YOUR DAILY GOAL";
       title = "How many hours would you like to study each day?";
       description = "Choose a target that feels realistic. You can change it whenever you need.";
       html = "<div class='goal-card'><span>YOUR STUDY TARGET</span><strong id='goalValue'>" + setup.studyHours.toFixed(1) + "<small> hours / day</small></strong><input id='studyGoal' type='range' min='1' max='12' step='.5' value='" + setup.studyHours + "'><div class='range-ends'><span>1 hour</span><span>12 hours</span></div></div><p class='question-note'>This is a personal goal, not a judgement or a competition.</p>";
       action = "Continue";
-    } else if (intro === 4) {
+    } else if (intro === 5) {
       eyebrow = "YOUR CURRENT ROUTINE";
       title = "How much time do you spend on your phone?";
       description = "An estimate is enough. Then choose a focus-session length that feels comfortable.";
@@ -98,7 +104,7 @@
         return "<button class='choice-pill " + (setup.focusMinutes === minutes ? "selected" : "") + "' data-focus-minutes='" + minutes + "'>" + minutes + " min</button>";
       }).join("") + "</div>";
       action = "Choose my priorities";
-    } else if (intro === 5) {
+    } else if (intro === 6) {
       eyebrow = "WHAT MATTERS MOST TO YOU?";
       title = "What would you like to improve?";
       description = "Pick the things that matter to you. We'll use them to personalise your focus space.";
@@ -108,12 +114,6 @@
         return "<button class='priority-choice " + (selected ? "selected" : "") + "' data-priority='" + value + "'><span>" + (selected ? "✓" : "＋") + "</span>" + value + "</button>";
       }).join("") + "</div>";
       action = "Scan my apps";
-    } else if (intro === 6) {
-      eyebrow = "YOUR PHONE, UNDER YOUR CONTROL";
-      title = "Let's find your distractions.";
-      description = "Review these suggested apps and choose which ones should pause during focus time.";
-      html = renderScanner();
-      action = "Create my focus plan";
     } else {
       eyebrow = "YOUR PLAN IS TAKING ROOT";
       title = "A little more room for what matters.";
