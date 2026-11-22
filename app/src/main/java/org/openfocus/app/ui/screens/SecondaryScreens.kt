@@ -457,15 +457,103 @@ private fun formatInsightDuration(durationMillis: Long): String {
 
 @Composable
 fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
-    Column(modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    val context = LocalContext.current
+    var refreshKey by remember { mutableStateOf(0) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val historyStore = remember(context) { FocusSessionHistoryStore(context) }
+    var sessions by remember(context) { mutableStateOf(historyStore.load()) }
+    DisposableEffect(lifecycleOwner, historyStore) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                sessions = historyStore.load()
+                refreshKey += 1
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val now = System.currentTimeMillis()
+    val stats = remember(sessions, now, refreshKey) {
+        org.openfocus.app.focus.FocusGrowthStats.calculate(sessions, now)
+    }
+    val nextSessionMilestone = listOf(1, 5, 10, 25, 50, 100).firstOrNull { it > stats.totalSessions } ?: 100
+    val sessionProgress = (stats.totalSessions.toFloat() / nextSessionMilestone).coerceIn(0f, 1f)
+    val nextHourMilestone = listOf(1, 5, 10, 25, 50, 100).firstOrNull { it > stats.totalFocusHours } ?: 100
+    val hourProgress = (stats.totalFocusHours.toFloat() / nextHourMilestone).coerceIn(0f, 1f)
+
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         TextButton(onClick = onBack) { Text("← Overview") }
-        Text("CELEBRATE THE SMALL WINS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-        Text("Look how you can grow.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("◎", style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text("Your momentum starts with one session.", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text("Streaks and achievements will be calculated from real completed sessions—not demo values.", color = MaterialTheme.colorScheme.onPrimaryContainer)
+        Text("YOUR PROGRESS, MADE VISIBLE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+        Text("Small steps add up.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text("Every number below comes from focus sessions completed on this device.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            InsightMetric("CURRENT STREAK", "${stats.currentStreak} days", Modifier.weight(1f))
+            InsightMetric("BEST STREAK", "${stats.longestStreak} days", Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            InsightMetric("SESSIONS", stats.totalSessions.toString(), Modifier.weight(1f))
+            InsightMetric("FOCUS TIME", "${stats.totalFocusHours}h", Modifier.weight(1f))
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("LAST 7 DAYS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                if (stats.lastSevenDays.all { it.focusMillis == 0L }) {
+                    Text("Your first completed session will start this chart.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    stats.lastSevenDays.forEach { day ->
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(day.label, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                Text(formatInsightDuration(day.focusMillis), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                            androidx.compose.material3.LinearProgressIndicator(
+                                progress = day.barProgress,
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text("NEXT MILESTONES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                Text("Sessions · ${stats.totalSessions} / $nextSessionMilestone", fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = sessionProgress,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("Focus time · ${stats.totalFocusHours} / $nextHourMilestone hours", fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = hourProgress,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("Milestones unlock from real completed sessions. Paused or abandoned timers do not count.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("ACHIEVEMENTS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                val achievements = listOf(
+                    Triple("First focus", "Complete your first session", stats.totalSessions >= 1),
+                    Triple("Finding rhythm", "Complete 5 sessions", stats.totalSessions >= 5),
+                    Triple("Ten deep dives", "Complete 10 sessions", stats.totalSessions >= 10),
+                    Triple("A steady habit", "Focus on 5 different days", stats.activeDays >= 5),
+                    Triple("One hour protected", "Accumulate 1 hour of focus", stats.totalFocusMillis >= 3_600_000L),
+                    Triple("Ten hours invested", "Accumulate 10 hours of focus", stats.totalFocusMillis >= 36_000_000L)
+                )
+                achievements.forEach { (title, description, unlocked) ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(if (unlocked) "✓" else "○", color = if (unlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.titleLarge)
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(title, fontWeight = FontWeight.SemiBold)
+                            Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(if (unlocked) "UNLOCKED" else "LOCKED", color = if (unlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
         }
     }
