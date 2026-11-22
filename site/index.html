@@ -1,7 +1,31 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101713"><meta name="apple-mobile-web-app-capable" content="yes"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.svg" type="image/svg+xml"><meta name="description" content="A calmer way to reclaim your attention. Open-source digital wellbeing preview."><title>Focus Garden — Product Preview</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="./styles.css"></head>
 <body><div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
-<section id="onboarding" class="onboarding"><div class="onboard-top"><div class="brand-mark"><span class="brand-flower">✿</span><span>focus garden</span></div><span class="step-count" id="stepCount">01 / 03</span></div><div class="onboard-stage"><div class="intro-art" id="introArt"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="sun-core">✿</div><span class="float-leaf leaf-one">✦</span><span class="float-leaf leaf-two">✿</span><span class="float-leaf leaf-three">✧</span></div><div class="onboard-copy"><p class="eyebrow" id="onboardEyebrow">A LITTLE SPACE FOR YOU</p><h1 id="onboardTitle">Your attention<br>deserves a garden.</h1><p id="onboardText">Make room for the things you care about. We'll help the noisy apps take a little step back.</p><div class="onboard-actions"><button class="button button-primary" id="onboardNext">Let's make space <span>→</span></button><button class="text-button" id="skipIntro">Explore preview</button></div></div></div><div class="onboard-bottom"><span>Private by nature</span><span>✿</span><span>Free & open source</span></div></section>
+<section id="onboarding" class="onboarding">
+  <div class="onboard-top">
+    <div class="brand-mark"><span class="brand-flower">✿</span><span>focus garden</span></div>
+    <span class="step-count" id="stepCount">01 / 08</span>
+  </div>
+  <div class="onboard-progress" aria-label="Setup progress"><i id="onboardProgress"></i></div>
+  <div class="onboard-stage">
+    <div class="intro-art" id="introArt" aria-hidden="true">
+      <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+      <div class="sun-core" id="introSymbol">✿</div>
+      <span class="float-leaf leaf-one">✦</span><span class="float-leaf leaf-two">✿</span><span class="float-leaf leaf-three">✧</span>
+    </div>
+    <div class="onboard-copy">
+      <p class="eyebrow" id="onboardEyebrow">A LITTLE SPACE FOR YOU</p>
+      <h1 id="onboardTitle">Your attention<br>deserves a garden.</h1>
+      <p id="onboardText">Make room for the things you care about. We'll help the noisy apps take a little step back.</p>
+      <div id="onboardExtra" class="onboard-extra"></div>
+      <div class="onboard-actions">
+        <button class="button button-primary" id="onboardNext">Let's begin <span>→</span></button>
+        <button class="text-button" id="skipIntro" hidden>Skip question</button>
+      </div>
+    </div>
+  </div>
+  <div class="onboard-bottom"><span>Private by nature</span><span>✿</span><span>Free & open source</span></div>
+</section>
 <div id="appShell" class="app-shell hidden"><aside class="sidebar"><div class="brand-lockup"><div class="brand-icon">✿</div><div><strong>focus garden</strong><small>GROW YOUR ATTENTION</small></div></div><div class="workspace-label">YOUR SPACE</div><nav class="side-nav" id="sideNav"><button class="nav-link active" data-page="home"><span>⌂</span>Overview</button><button class="nav-link" data-page="focus"><span>◷</span>Focus room</button><button class="nav-link" data-page="block"><span>◉</span>App garden <i class="nav-count">4</i></button><button class="nav-link" data-page="schedule"><span>▦</span>Schedules</button><button class="nav-link" data-page="insights"><span>⌁</span>Insights</button><button class="nav-link" data-page="planner"><span>☷</span>My planner</button><button class="nav-link" data-page="rewards"><span>✧</span>Growth & rewards</button></nav><div class="sidebar-spacer"></div><div class="sidebar-note"><div class="note-flower">✿</div><p>Small steps.<br><strong>Deep roots.</strong></p><span>Your progress belongs to you.</span></div><button class="nav-link settings-link" data-page="settings"><span>⚙</span>Settings</button><div class="profile-row"><div class="avatar">M</div><div><strong>Your space</strong><small>Local profile</small></div><span class="online-dot"></span></div></aside>
 <main class="main-content"><header class="topbar"><div class="mobile-brand"><span class="brand-icon">✿</span> focus garden</div><div class="breadcrumb"><span>MY SPACE</span><b>/</b><strong id="pageCrumb">Overview</strong></div><div class="top-actions"><span class="privacy-pill"><i></i> Saved on this device</span><button class="icon-button" aria-label="Notifications">♧</button><div class="avatar small-avatar">M</div></div></header><div class="page-container">
 <section class="page active" id="page-home"><div class="welcome-row"><div><p class="eyebrow">MONDAY, A FRESH START</p><h1>Good morning, <em>Mahin.</em> <span class="wave">✦</span></h1><p class="subheading">A little progress is still progress. What would you like to grow today?</p></div><div class="date-chip">☀ <span>YOUR DAY, YOUR PACE</span></div></div>
