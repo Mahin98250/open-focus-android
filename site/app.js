@@ -547,8 +547,18 @@
           const row = document.createElement("div");
           row.className = "usage-row";
           const symbol = document.createElement("span");
-          symbol.className = "app-logo";
-          symbol.textContent = app.slice(0, 1).toUpperCase();
+          const logoFiles = { Instagram: "instagram", Snapchat: "snapchat", YouTube: "youtube", Facebook: "facebook", TikTok: "tiktok", X: "x", Reddit: "reddit", Discord: "discord" };
+          const logoFile = logoFiles[app];
+          symbol.className = "app-logo" + (logoFile ? " " + (logoFile === "x" ? "x-logo" : logoFile) : "");
+          if (logoFile) {
+            const image = document.createElement("img");
+            image.src = "./assets/brands/" + logoFile + ".svg";
+            image.alt = "";
+            image.setAttribute("aria-hidden", "true");
+            symbol.append(image);
+          } else {
+            symbol.textContent = app.slice(0, 1).toUpperCase();
+          }
           const body = document.createElement("div");
           const title = document.createElement("strong");
           title.textContent = app;
