@@ -56,6 +56,11 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val foregroundPackage = event.packageName?.toString() ?: return
+        // Adding/removing TYPE_ACCESSIBILITY_OVERLAY can itself generate a window event
+        // attributed to this app. Treating that event as an unblocked app used to
+        // remove the blocker immediately, letting the selected game continue opening.
+        // Ignore our own overlay/app windows; only evaluate other foreground apps.
+        if (foregroundPackage == packageName) return
 
         val timerStore = FocusTimerStore(this)
         val focusActive = timerStore.load().isRunning

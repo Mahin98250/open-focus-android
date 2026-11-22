@@ -62,6 +62,8 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     var expandedLimitPackage by remember { mutableStateOf<String?>(null) }
     var usageAccessEnabled by remember { mutableStateOf(dailyLimitStore.hasUsageAccess()) }
     var serviceEnabled by remember { mutableStateOf(isBlockingServiceEnabled(context)) }
+    var showAccessibilitySteps by remember { mutableStateOf(false) }
+    var showUsageSteps by remember { mutableStateOf(false) }
     val disclosurePreferences = remember { context.getSharedPreferences("app_block_disclosure", Context.MODE_PRIVATE) }
     var disclosureAccepted by remember { mutableStateOf(disclosurePreferences.getBoolean("accessibility_disclosure_accepted", false)) }
 
@@ -97,14 +99,76 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             Text("Choose apps to pause.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text("Choose which apps take a pause during your focus sessions or recurring schedules.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-            Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(if (serviceEnabled) "BLOCKING ACCESS ENABLED" else "ONE-TIME ANDROID SETUP", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
-                Text(
-                    if (serviceEnabled) "Your selected apps are redirected during a focus session or an active schedule." else "Android requires you to explicitly enable the accessibility service before selected apps can be blocked.",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+        ) {
+            Column(
+                Modifier.fillMaxWidth().padding(17.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text("PERMISSION SETUP", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
+                Text("Let's make blocking work.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Complete the steps below. Open Focus checks each permission again when you return from Android Settings.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodySmall)
+
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("1. App blocking access", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                            Text(if (serviceEnabled) "✓ VERIFIED" else "NOT ENABLED", color = if (serviceEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        }
+                        Text(if (serviceEnabled) "Android confirms that Open Focus's Accessibility service is enabled." else "This lets Open Focus detect when one of your selected apps comes to the foreground. It does not read screen contents.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { showAccessibilitySteps = !showAccessibilitySteps }) {
+                            Text(if (showAccessibilitySteps) "Hide step-by-step guide" else "Show me each step")
+                        }
+                        if (showAccessibilitySteps) {
+                            Text("STEP 1  Tap the button below to open Accessibility settings.", style = MaterialTheme.typography.bodySmall)
+                            Text("STEP 2  Find Open Focus under Installed apps, Downloaded apps or Installed services. The label varies by Android version.", style = MaterialTheme.typography.bodySmall)
+                            Text("STEP 3  Open Open Focus and switch on its Accessibility service.", style = MaterialTheme.typography.bodySmall)
+                            Text("STEP 4  Read the Android disclosure and tap Allow. Return here; the status will be checked again.", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(
+                            onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(if (serviceEnabled) "Review Accessibility settings" else "Open Accessibility settings") }
+                    }
+                }
+
+                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("2. Usage Access", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                            Text(if (usageAccessEnabled) "✓ VERIFIED" else "NOT ENABLED", color = if (usageAccessEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                        }
+                        Text(if (usageAccessEnabled) "Android confirms that Open Focus can read aggregate app-usage time for your daily limits." else "Needed only for daily app limits. It lets Android provide app-usage totals; it does not reveal messages or screen content.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { showUsageSteps = !showUsageSteps }) {
+                            Text(if (showUsageSteps) "Hide step-by-step guide" else "Show me each step")
+                        }
+                        if (showUsageSteps) {
+                            Text("STEP 1  Tap the button below to open Usage Access settings.", style = MaterialTheme.typography.bodySmall)
+                            Text("STEP 2  Find Open Focus in the app list. You may need to scroll.", style = MaterialTheme.typography.bodySmall)
+                            Text("STEP 3  Open it and enable Allow usage tracking / Permit usage access.", style = MaterialTheme.typography.bodySmall)
+                            Text("STEP 4  Return here. Open Focus will verify the setting again.", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(
+                            onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text(if (usageAccessEnabled) "Review Usage Access" else "Open Usage Access settings") }
+                    }
+                }
+
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        if (serviceEnabled && usageAccessEnabled) "All permission checks passed." else if (serviceEnabled) "App blocking is ready. Usage Access is still needed for daily limits." else "Finish the required step to activate app blocking.",
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = {
+                        serviceEnabled = isBlockingServiceEnabled(context)
+                        usageAccessEnabled = dailyLimitStore.hasUsageAccess()
+                    }) { Text("Verify") }
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = disclosureAccepted,
@@ -114,16 +178,10 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                         }
                     )
                     Text(
-                        "I understand this service reads the foreground app's package name to enforce my own block list. It does not read screen content.",
+                        "I understand that the service checks the foreground app name to apply my block list. It does not read screen content.",
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         style = MaterialTheme.typography.bodySmall
                     )
-                }
-                Button(
-                    enabled = disclosureAccepted || serviceEnabled,
-                    onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-                ) {
-                    Text(if (serviceEnabled) "Review Android access" else "Open Accessibility settings")
                 }
             }
         }
@@ -138,19 +196,6 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onSchedules) { Text("Schedules") }
-            }
-        }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("DAILY APP LIMITS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                Text(
-                    if (usageAccessEnabled && serviceEnabled) "Daily limits can be enforced using local Android usage totals. Both Usage Access and the accessibility service are enabled." else if (!usageAccessEnabled && !serviceEnabled) "Enable Usage Access and the accessibility service to enforce daily limits. Usage stays on this device." else if (!usageAccessEnabled) "Enable Usage Access to measure daily app time. App blocking also requires the accessibility service." else "Usage Access is enabled. Turn on the accessibility service to enforce limits when you reach them.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall
-                )
-                TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }) {
-                    Text(if (usageAccessEnabled) "Review Usage Access" else "Enable Usage Access")
-                }
             }
         }
         if (installedApps.isEmpty()) {
