@@ -1,11 +1,21 @@
-const CACHE_NAME = "open-focus-preview-v4";
+const CACHE_NAME = "open-focus-preview-v5";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
-  "./icon.svg"
+  "./icon.svg",
+  "./assets/brands/instagram.svg",
+  "./assets/brands/snapchat.svg",
+  "./assets/brands/youtube.svg",
+  "./assets/brands/facebook.svg",
+  "./assets/brands/tiktok.svg",
+  "./assets/brands/x.svg",
+  "./assets/brands/reddit.svg",
+  "./assets/brands/discord.svg",
+  "./assets/brands/netflix.svg",
+  "./assets/brands/pinterest.svg"
 ];
 
 self.addEventListener("install", event => {
