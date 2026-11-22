@@ -79,7 +79,7 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
         }
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
             Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("✿  YOUR FOCUS SPACE", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+                Text("YOUR FOCUS SPACE", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
                 Text("One thing at a time.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Text("Give your best energy to what matters most.", color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Button(onClick = { onNavigate("focus") }) { Text("Start focusing  →") }
