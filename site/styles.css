@@ -92,3 +92,14 @@
 .app-logo.reddit{background:#ff4500}
 .app-logo.discord{background:#5865f2}
 .usage-row .app-logo img{width:62%;height:62%}
+
+.scan-app-icon img{width:65%;height:65%;object-fit:contain;filter:brightness(0) invert(1)}
+.scan-app-icon.snapchat{background:#ffeb00}
+.scan-app-icon.snapchat img{filter:none}
+.scan-app-icon.instagram{background:linear-gradient(135deg,#7d36bd,#d83277 55%,#f4a33a)}
+.scan-app-icon.youtube{background:#ff0033}
+.scan-app-icon.facebook{background:#0866ff}
+.scan-app-icon.tiktok,.scan-app-icon.x{background:#090909}
+.scan-app-icon.reddit{background:#ff4500}
+.scan-app-icon.discord{background:#5865f2}
+.scan-app-icon.netflix{background:#141414}
