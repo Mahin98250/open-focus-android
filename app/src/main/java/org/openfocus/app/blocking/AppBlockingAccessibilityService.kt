@@ -34,20 +34,26 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     private var lastBlockedPackage: String? = null
     private var lastBlockedAtMillis: Long = 0L
 
+    // Reuse stores on accessibility callbacks and watchdog ticks.
+    private val timerStore by lazy { FocusTimerStore(this) }
+    private val appBlockStore by lazy { AppBlockStore(this) }
+    private val scheduleStore by lazy { BlockScheduleStore(this) }
+    private val dailyAppLimitStore by lazy { DailyAppLimitStore(this) }
+
     private val overlayWatchdog = object : Runnable {
         override fun run() {
-            val timerStore = FocusTimerStore(this@AppBlockingAccessibilityService)
+            val timerStore = timerStore
             val focusActive = timerStore.load().isRunning
             if (!focusActive && timerStore.takeCompletionNotification()) {
                 FocusCompletionNotification.show(this@AppBlockingAccessibilityService)
             }
-            val scheduleActive = BlockScheduleStore(this@AppBlockingAccessibilityService).isBlockingNow()
+            val scheduleActive = scheduleStore.isBlockingNow()
             val lastPackage = lastBlockedPackage
             val selectedForBlocking = lastPackage?.let {
-                AppBlockStore(this@AppBlockingAccessibilityService).isBlocked(it)
+                appBlockStore.isBlocked(it)
             } ?: false
             val dailyLimitActive = lastPackage?.let {
-                DailyAppLimitStore(this@AppBlockingAccessibilityService).isLimitReached(it)
+                dailyAppLimitStore.isLimitReached(it)
             } ?: false
             val restrictionStillActive = ((focusActive || scheduleActive) && selectedForBlocking) || dailyLimitActive
             if (!restrictionStillActive) {
@@ -70,14 +76,14 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         // Ignore our own overlay/app windows; only evaluate other foreground apps.
         if (foregroundPackage == packageName) return
 
-        val timerStore = FocusTimerStore(this)
+        val timerStore = timerStore
         val focusActive = timerStore.load().isRunning
         if (!focusActive && timerStore.takeCompletionNotification()) {
             FocusCompletionNotification.show(this)
         }
-        val scheduleActive = BlockScheduleStore(this).isBlockingNow()
-        val selectedForBlocking = AppBlockStore(this).isBlocked(foregroundPackage)
-        val dailyLimitReached = DailyAppLimitStore(this).isLimitReached(foregroundPackage)
+        val scheduleActive = scheduleStore.isBlockingNow()
+        val selectedForBlocking = appBlockStore.isBlocked(foregroundPackage)
+        val dailyLimitReached = dailyAppLimitStore.isLimitReached(foregroundPackage)
         val blockedBySession = (focusActive || scheduleActive) && selectedForBlocking
         if (!blockedBySession && !dailyLimitReached) {
             // Do not dismiss an already-visible guard merely because Android reports
@@ -86,8 +92,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             if (blockerOverlay == null) return
             val guardedPackage = lastBlockedPackage ?: return
             val stillRestricted = (
-                (focusActive || scheduleActive) && AppBlockStore(this).isBlocked(guardedPackage)
-            ) || DailyAppLimitStore(this).isLimitReached(guardedPackage)
+                (focusActive || scheduleActive) && appBlockStore.isBlocked(guardedPackage)
+            ) || dailyAppLimitStore.isLimitReached(guardedPackage)
             if (!stillRestricted) removeBlockerOverlay()
             return
         }

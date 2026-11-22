@@ -13,6 +13,14 @@ import java.util.Calendar
  */
 class DailyAppLimitStore(private val context: Context) {
     private val preferences = context.getSharedPreferences("daily_app_limits", Context.MODE_PRIVATE)
+    private val usageCacheLock = Any()
+    @Volatile private var cachedUsageTotals: CachedUsageTotals? = null
+
+    private data class CachedUsageTotals(
+        val startOfDayMillis: Long,
+        val cachedAtMillis: Long,
+        val totalsByPackage: Map<String, Long>
+    )
 
     fun limitsMinutes(): Map<String, Int> {
         val raw = preferences.getString(KEY_LIMITS, "{}") ?: "{}"
@@ -63,16 +71,37 @@ class DailyAppLimitStore(private val context: Context) {
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
         val usageManager = context.getSystemService(UsageStatsManager::class.java) ?: return false
-        val usedMillis = runCatching {
-            usageManager.queryAndAggregateUsageStats(startOfDay, nowEpochMillis)
-                .get(packageName)?.totalTimeInForeground ?: 0L
-        }.getOrDefault(0L)
+        val usedMillis = usageTotalsSince(startOfDay, nowEpochMillis, usageManager)[packageName] ?: 0L
         return usedMillis >= limit * MILLIS_PER_MINUTE
+    }
+
+    private fun usageTotalsSince(
+        startOfDayMillis: Long,
+        nowEpochMillis: Long,
+        usageManager: UsageStatsManager
+    ): Map<String, Long> = synchronized(usageCacheLock) {
+        val cached = cachedUsageTotals
+        if (cached != null &&
+            cached.startOfDayMillis == startOfDayMillis &&
+            nowEpochMillis >= cached.cachedAtMillis &&
+            nowEpochMillis - cached.cachedAtMillis < USAGE_CACHE_MILLIS
+        ) {
+            return@synchronized cached.totalsByPackage
+        }
+
+        val totals = runCatching {
+            usageManager.queryAndAggregateUsageStats(startOfDayMillis, nowEpochMillis)
+                .mapValues { (_, stats) -> stats.totalTimeInForeground }
+        }.getOrDefault(emptyMap())
+
+        cachedUsageTotals = CachedUsageTotals(startOfDayMillis, nowEpochMillis, totals)
+        totals
     }
 
     companion object {
         private const val KEY_LIMITS = "limits"
         private const val MAX_MINUTES = 24 * 60
         private const val MILLIS_PER_MINUTE = 60_000L
+        private const val USAGE_CACHE_MILLIS = 3_000L
     }
 }
