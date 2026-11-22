@@ -193,7 +193,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("✿", color = MaterialTheme.colorScheme.primary, fontSize = 28.sp)
                         Spacer(Modifier.width(8.dp))
-                        Text("focus garden", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("Open Focus", fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp, style = MaterialTheme.typography.titleLarge)
                     }
                     Text(
                         if (page < 3) "WELCOME" else "YOUR FOCUS PLAN",
