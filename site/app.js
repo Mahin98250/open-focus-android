@@ -1,7 +1,7 @@
 (() => {
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-  const storageKey = "focus-garden-preview-v1";
+  const storageKey = "focus-garden-preview-v2";
 
   function read() {
     try { return JSON.parse(localStorage.getItem(storageKey) || "{}"); }
