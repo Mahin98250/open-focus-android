@@ -458,8 +458,8 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
         Text("Look how you can grow.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("✿", style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text("Your garden starts with one session.", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text("◎", style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text("Your momentum starts with one session.", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                 Text("Streaks and achievements will be calculated from real completed sessions—not demo values.", color = MaterialTheme.colorScheme.onPrimaryContainer)
             }
         }
