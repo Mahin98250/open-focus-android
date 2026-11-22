@@ -74,3 +74,21 @@
 #insightWeeklyBars .bar-set>div{transition:height .4s ease}
 #homeTaskPreview .task-row{padding:10px 0}
 #insightSelectedApps .usage-row{padding:10px 0}
+
+/* Open Focus wordmark: custom type treatment, intentionally no separate icon. */
+.wordmark{display:inline-flex;align-items:baseline;gap:.22em;font-family:Manrope,system-ui,sans-serif;font-size:19px;font-weight:600;letter-spacing:-1.05px;line-height:1;color:#f1f5ef;white-space:nowrap}
+.wordmark strong{font-weight:800;letter-spacing:-1.25px;color:#c3ebc9}
+.brand-mark .wordmark{font-size:25px;letter-spacing:-1.45px}
+.brand-lockup{padding-bottom:38px}
+.brand-lockup .wordmark{font-size:20px}
+.mobile-brand .wordmark{font-size:16px}
+.app-logo img{width:58%;height:58%;object-fit:contain;display:block;filter:brightness(0) invert(1)}
+.app-logo.snapchat img{filter:none;width:66%;height:66%}
+.app-logo.instagram{background:linear-gradient(135deg,#7d36bd,#d83277 55%,#f4a33a)}
+.app-logo.snapchat{background:#ffeb00}
+.app-logo.youtube{background:#ff0033}
+.app-logo.facebook{background:#0866ff}
+.app-logo.tiktok,.app-logo.x-logo{background:#090909}
+.app-logo.reddit{background:#ff4500}
+.app-logo.discord{background:#5865f2}
+.usage-row .app-logo img{width:62%;height:62%}
