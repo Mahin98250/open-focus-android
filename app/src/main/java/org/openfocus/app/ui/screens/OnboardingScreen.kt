@@ -281,83 +281,6 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             }
                         }
                         3 -> {
-                            Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(19.dp)) {
-                                Text("LET'S SET A REALISTIC GOAL", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
-                                Text("How much would you like to study each day?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                                Text("This is your personal target, not a pressure. You can change it whenever life changes.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                                    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Text("YOUR DAILY STUDY GOAL", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
-                                        Row(verticalAlignment = Alignment.Bottom) {
-                                            Text(String.format(Locale.ROOT, "%.1f", studyHours), fontSize = 54.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                            Spacer(Modifier.width(8.dp))
-                                            Text("hours / day", modifier = Modifier.padding(bottom = 10.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                        }
-                                        Slider(
-                                            value = studyHours,
-                                            onValueChange = { studyHours = it },
-                                            valueRange = 1f..12f,
-                                            steps = 21
-                                        )
-                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                            Text("1 hour", color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                            Text("12 hours", color = MaterialTheme.colorScheme.onPrimaryContainer)
-                                        }
-                                    }
-                                }
-                                Text("We'll use this goal to shape your daily progress, not to judge you.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                        4 -> {
-                            Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(17.dp)) {
-                                Text("YOUR CURRENT ROUTINE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
-                                Text("Roughly how much time do you spend on your phone each day?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                                Text("An estimate is perfectly fine. This helps us show a useful starting point.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                listOf(2, 4, 5, 7, 9).forEach { hours ->
-                                    val label = when (hours) {
-                                        2 -> "Under 3 hours"
-                                        4 -> "3–4 hours"
-                                        5 -> "4–6 hours"
-                                        7 -> "6–8 hours"
-                                        else -> "More than 8 hours"
-                                    }
-                                    FilterChip(
-                                        selected = currentScreenTime == hours,
-                                        onClick = { currentScreenTime = hours },
-                                        label = { Text(label) },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                                Spacer(Modifier.height(5.dp))
-                                Text("What focus session feels comfortable?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    listOf(25, 45, 60).forEach { minutes ->
-                                        FilterChip(
-                                            selected = focusMinutes == minutes,
-                                            onClick = { focusMinutes = minutes },
-                                            label = { Text("$minutes min") }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        5 -> {
-                            val choices = listOf("Study & exams", "Less scrolling", "Better sleep", "Healthier routine", "More time for hobbies")
-                            Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text("WHAT MATTERS MOST TO YOU?", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
-                                Text("What would you most like to improve?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                                Text("Choose as many as you like. We'll use these to shape your focus space.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                choices.forEach { choice ->
-                                    FilterChip(
-                                        selected = choice in focusPriorities,
-                                        onClick = { focusPriorities = if (choice in focusPriorities) focusPriorities - choice else focusPriorities + choice },
-                                        label = { Text(choice) },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-                        }
-                        6 -> {
                             Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text("YOUR PHONE, UNDER YOUR CONTROL", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                                 Text("Let's find your distractions.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
@@ -427,6 +350,83 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 }
                             }
                         }
+                        4 -> {
+                            Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(19.dp)) {
+                                Text("LET'S SET A REALISTIC GOAL", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+                                Text("How much would you like to study each day?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                                Text("This is your personal target, not a pressure. You can change it whenever life changes.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+                                    Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("YOUR DAILY STUDY GOAL", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
+                                        Row(verticalAlignment = Alignment.Bottom) {
+                                            Text(String.format(Locale.ROOT, "%.1f", studyHours), fontSize = 54.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("hours / day", modifier = Modifier.padding(bottom = 10.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        }
+                                        Slider(
+                                            value = studyHours,
+                                            onValueChange = { studyHours = it },
+                                            valueRange = 1f..12f,
+                                            steps = 21
+                                        )
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text("1 hour", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                            Text("12 hours", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        }
+                                    }
+                                }
+                                Text("We'll use this goal to shape your daily progress, not to judge you.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        5 -> {
+                            Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(17.dp)) {
+                                Text("YOUR CURRENT ROUTINE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+                                Text("Roughly how much time do you spend on your phone each day?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                                Text("An estimate is perfectly fine. This helps us show a useful starting point.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                listOf(2, 4, 5, 7, 9).forEach { hours ->
+                                    val label = when (hours) {
+                                        2 -> "Under 3 hours"
+                                        4 -> "3–4 hours"
+                                        5 -> "4–6 hours"
+                                        7 -> "6–8 hours"
+                                        else -> "More than 8 hours"
+                                    }
+                                    FilterChip(
+                                        selected = currentScreenTime == hours,
+                                        onClick = { currentScreenTime = hours },
+                                        label = { Text(label) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                Spacer(Modifier.height(5.dp))
+                                Text("What focus session feels comfortable?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf(25, 45, 60).forEach { minutes ->
+                                        FilterChip(
+                                            selected = focusMinutes == minutes,
+                                            onClick = { focusMinutes = minutes },
+                                            label = { Text("$minutes min") }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        6 -> {
+                            val choices = listOf("Study & exams", "Less scrolling", "Better sleep", "Healthier routine", "More time for hobbies")
+                            Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("WHAT MATTERS MOST TO YOU?", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
+                                Text("What would you most like to improve?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                                Text("Choose as many as you like. We'll use these to shape your focus space.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                choices.forEach { choice ->
+                                    FilterChip(
+                                        selected = choice in focusPriorities,
+                                        onClick = { focusPriorities = if (choice in focusPriorities) focusPriorities - choice else focusPriorities + choice },
+                                        label = { Text(choice) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        }
                         else -> {
                             Column(
                                 Modifier.fillMaxWidth().padding(top = 30.dp),
@@ -471,7 +471,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
-                        if (page == 6) scanComplete = true
+                        if (page == 3) scanComplete = true
                         if (page == 7) finishSetup() else page += 1
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -480,10 +480,10 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         when (page) {
                             0 -> "Let's begin"
                             1 -> "Continue"
-                            2 -> "Set my goals"
-                            3 -> "Continue"
-                            4 -> "Choose my priorities"
-                            5 -> "Scan my apps"
+                            2 -> "Scan my apps"
+                            3 -> "Continue with selected apps"
+                            4 -> "Set my goals"
+                            5 -> "Continue"
                             6 -> "Create my focus plan"
                             else -> "Enter my focus space"
                         },
@@ -493,11 +493,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 if (page in 3..6) {
                     TextButton(
                         onClick = {
-                            if (page == 6) scanComplete = false
+                            if (page == 3) scanComplete = false
                             page += 1
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text(if (page == 6) "I'll choose apps later" else "Skip this question") }
+                    ) { Text(if (page == 3) "I'll choose apps later" else "Skip this question") }
                 }
                 if (page > 0) {
                     TextButton(onClick = { page -= 1 }, modifier = Modifier.fillMaxWidth()) { Text("Back") }
