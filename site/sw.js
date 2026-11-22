@@ -1,4 +1,4 @@
-const CACHE_NAME = "focus-garden-preview-v2";
+const CACHE_NAME = "focus-garden-preview-v3";
 const CORE_ASSETS = [
   "./",
   "./index.html",
