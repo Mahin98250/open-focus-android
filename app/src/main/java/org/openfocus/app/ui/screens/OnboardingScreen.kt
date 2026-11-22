@@ -2,6 +2,7 @@ package org.openfocus.app.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -124,6 +125,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     var focusMinutes by remember { mutableIntStateOf(25) }
     var currentScreenTime by remember { mutableIntStateOf(5) }
     var selectedApps by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var focusPriorities by remember { mutableStateOf(setOf("Study & exams")) }
     var scanComplete by remember { mutableStateOf(false) }
 
     val scannedApps = remember(context) {
@@ -145,7 +147,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
     val suggested = scannedApps.filter { it.suggested }
     val visibleApps = scannedApps.take(60)
-    val progress = (page + 1).toFloat() / 7f
+    val progress = (page + 1).toFloat() / 8f
     val rotation by animateFloatAsState(
         targetValue = if (page % 2 == 0) -7f else 7f,
         animationSpec = spring(stiffness = 110f),
@@ -164,6 +166,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             .putFloat("daily_study_goal_hours", studyHours)
             .putInt("preferred_focus_minutes", focusMinutes)
             .putInt("reported_daily_screen_hours", currentScreenTime)
+            .putStringSet("focus_priorities", focusPriorities)
             .putBoolean("distraction_scan_completed", scanComplete)
             .apply()
         onComplete()
@@ -196,7 +199,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("YOUR SETUP", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${page + 1} OF 7", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${page + 1} OF 8", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Box(
                         Modifier.fillMaxWidth().height(5.dp)
@@ -335,6 +338,22 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             }
                         }
                         5 -> {
+                            val choices = listOf("Study & exams", "Less scrolling", "Better sleep", "Healthier routine", "More time for hobbies")
+                            Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("WHAT MATTERS MOST TO YOU?", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
+                                Text("What would you most like to improve?", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                                Text("Choose as many as you like. We'll use these to shape your focus space.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                choices.forEach { choice ->
+                                    FilterChip(
+                                        selected = choice in focusPriorities,
+                                        onClick = { focusPriorities = if (choice in focusPriorities) focusPriorities - choice else focusPriorities + choice },
+                                        label = { Text(choice) },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        }
+                        6 -> {
                             Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text("YOUR PHONE, UNDER YOUR CONTROL", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                                 Text("Let's find your distractions.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
@@ -421,9 +440,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                         SummaryLine("Focus session", "$focusMinutes minutes")
                                         SummaryLine("Daily phone use (estimate)", "$currentScreenTime hours")
                                         SummaryLine("Apps on pause list", selectedApps.size.toString())
+                                        SummaryLine("Main priorities", focusPriorities.size.toString() + " selected")
                                     }
                                 }
-                                Text("Your choices are stored on this device. App blocking will ask you to enable Android Accessibility access separately; it is never switched on silently.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                                Text("Your choices are stored on this device. App blocking needs your explicit permission; it is never switched on silently.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                                OutlinedButton(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, modifier = Modifier.fillMaxWidth()) { Text("Enable app blocking in Android Settings") }
                             }
                         }
                     }
@@ -433,8 +454,8 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = {
-                        if (page == 5) scanComplete = true
-                        if (page == 6) finishSetup() else page += 1
+                        if (page == 6) scanComplete = true
+                        if (page == 7) finishSetup() else page += 1
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -444,23 +465,22 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             1 -> "Continue"
                             2 -> "Set my goals"
                             3 -> "Continue"
-                            4 -> "Scan my apps"
-                            5 -> "Create my focus plan"
+                            4 -> "Choose my priorities"
+                            5 -> "Scan my apps"
+                            6 -> "Create my focus plan"
                             else -> "Enter my focus space"
                         },
                         Modifier.padding(vertical = 5.dp)
                     )
                 }
-                if (page in 3..5) {
+                if (page in 3..6) {
                     TextButton(
                         onClick = {
-                            if (page == 5) scanComplete = false
+                            if (page == 6) scanComplete = false
                             page += 1
                         },
                         modifier = Modifier.fillMaxWidth()
-                    ) { Text(if (page == 5) "I'll choose apps later" else "Skip this question") }
-                } else if (page < 3) {
-                    TextButton(onClick = { page += 1 }, modifier = Modifier.fillMaxWidth()) { Text("Continue") }
+                    ) { Text(if (page == 6) "I'll choose apps later" else "Skip this question") }
                 }
                 if (page > 0) {
                     TextButton(onClick = { page -= 1 }, modifier = Modifier.fillMaxWidth()) { Text("Back") }
