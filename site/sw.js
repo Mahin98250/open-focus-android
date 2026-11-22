@@ -1,4 +1,4 @@
-const CACHE_NAME = "open-focus-preview-v5";
+const CACHE_NAME = "open-focus-preview-v6";
 const CORE_ASSETS = [
   "./",
   "./index.html",
