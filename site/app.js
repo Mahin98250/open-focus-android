@@ -103,7 +103,7 @@
       }).join("") + "</div><h3 class='question-subtitle'>Your preferred focus session</h3><div class='choice-row'>" + [25,45,60].map(function(minutes) {
         return "<button class='choice-pill " + (setup.focusMinutes === minutes ? "selected" : "") + "' data-focus-minutes='" + minutes + "'>" + minutes + " min</button>";
       }).join("") + "</div>";
-      action = "Choose my priorities";
+      action = "Continue";
     } else if (intro === 6) {
       eyebrow = "WHAT MATTERS MOST TO YOU?";
       title = "What would you like to improve?";
@@ -113,7 +113,7 @@
         const selected = setup.priorities.includes(value);
         return "<button class='priority-choice " + (selected ? "selected" : "") + "' data-priority='" + value + "'><span>" + (selected ? "✓" : "＋") + "</span>" + value + "</button>";
       }).join("") + "</div>";
-      action = "Scan my apps";
+      action = "Create my focus plan";
     } else {
       eyebrow = "YOUR PLAN IS TAKING ROOT";
       title = "A little more room for what matters.";
@@ -125,7 +125,7 @@
     $("#onboardEyebrow").textContent = eyebrow;
     $("#onboardTitle").textContent = title;
     $("#onboardText").textContent = description;
-    $("#introSymbol").textContent = intro === 6 ? "◉" : intro === 7 ? "◎" : "◌";
+    $("#introSymbol").textContent = intro === 3 ? "◉" : intro === 7 ? "◎" : "◌";
     extra.innerHTML = html;
     $("#onboardNext").innerHTML = action + " <span>→</span>";
 
@@ -198,7 +198,7 @@
     else { intro += 1; renderStep(); }
   });
   $("#skipIntro").addEventListener("click", function() {
-    if (intro === 6) setup.blockedApps = [];
+    if (intro === 3) setup.blockedApps = [];
     intro += 1;
     renderStep();
   });

@@ -144,7 +144,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text("DAILY APP LIMITS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 Text(
-                    if (usageAccessEnabled) "Daily limits are active and measured from Android's local usage totals." else "Allow Usage Access to enforce daily time limits. Usage stays on this device.",
+                    if (usageAccessEnabled && serviceEnabled) "Daily limits can be enforced using local Android usage totals. Both Usage Access and the accessibility service are enabled." else if (!usageAccessEnabled && !serviceEnabled) "Enable Usage Access and the accessibility service to enforce daily limits. Usage stays on this device." else if (!usageAccessEnabled) "Enable Usage Access to measure daily app time. App blocking also requires the accessibility service." else "Usage Access is enabled. Turn on the accessibility service to enforce limits when you reach them.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
