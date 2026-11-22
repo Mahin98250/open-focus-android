@@ -84,7 +84,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (serviceEnabled) "BLOCKING ACCESS ENABLED" else "ONE-TIME ANDROID SETUP", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
                 Text(
-                    if (serviceEnabled) "Your selected apps are redirected while a focus timer is running." else "Android requires you to explicitly enable the accessibility service before selected apps can be blocked.",
+                    if (serviceEnabled) "Your selected apps are redirected during a focus session or an active schedule." else "Android requires you to explicitly enable the accessibility service before selected apps can be blocked.",
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     style = MaterialTheme.typography.bodyMedium
                 )
