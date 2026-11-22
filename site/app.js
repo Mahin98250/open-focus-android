@@ -31,14 +31,14 @@
     ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required. Your personal focus choices stay on this device.", "❀", "Personalise my experience"]
   ];
   const previewApps = [
-    { name: "Instagram", icon: "◎", category: "Social · Reels", suggested: true },
-    { name: "Snapchat", icon: "👻", category: "Social · Stories", suggested: true },
-    { name: "YouTube", icon: "▶", category: "Video · Shorts", suggested: true },
-    { name: "TikTok", icon: "♪", category: "Short videos", suggested: true },
-    { name: "Facebook", icon: "f", category: "Social feed", suggested: true },
-    { name: "Reddit", icon: "◉", category: "Communities", suggested: true },
-    { name: "Netflix", icon: "N", category: "Streaming", suggested: false },
-    { name: "Discord", icon: "◈", category: "Communities", suggested: false }
+    { name: "Instagram", logo: "instagram", category: "Social · Reels", suggested: true },
+    { name: "Snapchat", logo: "snapchat", category: "Social · Stories", suggested: true },
+    { name: "YouTube", logo: "youtube", category: "Video · Shorts", suggested: true },
+    { name: "TikTok", logo: "tiktok", category: "Short videos", suggested: true },
+    { name: "Facebook", logo: "facebook", category: "Social feed", suggested: true },
+    { name: "Reddit", logo: "reddit", category: "Communities", suggested: true },
+    { name: "Netflix", logo: "netflix", category: "Streaming", suggested: false },
+    { name: "Discord", logo: "discord", category: "Communities", suggested: false }
   ];
   const setup = {
     studyHours: Number(read().studyHours) || 4,
@@ -55,7 +55,7 @@
     html += "<div class='scan-actions'><button type='button' class='text-button' id='selectSuggested'>Select suggestions</button><button type='button' class='text-button' id='clearSelected'>Clear</button></div><div class='scan-app-list'>";
     html += previewApps.map(function(app) {
       const selected = setup.blockedApps.includes(app.name);
-      return "<button type='button' class='scan-app " + (selected ? "selected" : "") + "' data-scan-app='" + app.name + "'><span class='scan-app-icon'>" + app.icon + "</span><span class='scan-app-copy'><strong>" + app.name + "</strong><small>" + app.category + "</small></span><span class='scan-check'>" + (selected ? "✓" : "+") + "</span></button>";
+      return "<button type='button' class='scan-app " + (selected ? "selected" : "") + "' data-scan-app='" + app.name + "'><span class='scan-app-icon " + app.logo + "'><img src='./assets/brands/" + app.logo + ".svg' alt='' aria-hidden='true'></span><span class='scan-app-copy'><strong>" + app.name + "</strong><small>" + app.category + "</small></span><span class='scan-check'>" + (selected ? "✓" : "+") + "</span></button>";
     }).join("");
     html += "</div><p class='question-note'>Blocking Instagram pauses the whole app, not only Reels. Blocking YouTube pauses the whole app, not only Shorts.</p>";
     return html;
