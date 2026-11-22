@@ -50,7 +50,19 @@ private val focusDurations = listOf(25, 45, 60)
 fun FocusRoomScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val store = remember { FocusTimerStore(context) }
-    var snapshot by remember { mutableStateOf(store.load()) }
+    val initialSnapshot = remember(context) {
+        val saved = store.load()
+        val onboarding = context.getSharedPreferences("app_onboarding", android.content.Context.MODE_PRIVATE)
+        if (!onboarding.getBoolean("focus_duration_initialized", false)) {
+            val preferred = onboarding.getInt("preferred_focus_minutes", 25).coerceIn(1, 180)
+            store.reset(preferred * 60_000L)
+            onboarding.edit().putBoolean("focus_duration_initialized", true).apply()
+            store.load()
+        } else {
+            saved
+        }
+    }
+    var snapshot by remember { mutableStateOf(initialSnapshot) }
     var remaining by remember { mutableStateOf(snapshot.remainingMillis) }
     var selectedMinutes by remember { mutableIntStateOf((snapshot.totalDurationMillis / 60_000L).toInt()) }
     var customMinutesText by remember { mutableStateOf("") }
