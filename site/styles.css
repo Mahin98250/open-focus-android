@@ -103,3 +103,8 @@
 .scan-app-icon.reddit{background:#ff4500}
 .scan-app-icon.discord{background:#5865f2}
 .scan-app-icon.netflix{background:#141414}
+
+.app-logo.netflix,.scan-app-icon.netflix{background:#141414}
+.app-logo.discord,.scan-app-icon.discord{background:#5865f2}
+.app-logo.pinterest,.scan-app-icon.pinterest{background:#bd081c}
+.about-row .wordmark{font-size:17px;margin-bottom:7px}
