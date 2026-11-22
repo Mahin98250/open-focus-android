@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Open Focus">
   <rect width="512" height="512" rx="112" fill="#101713"/>
-  <text x="256" y="302" text-anchor="middle" fill="#f1f5ef" font-family="Manrope,Arial,sans-serif" font-size="196" font-weight="800" letter-spacing="-18">OF</text>
-  <rect x="104" y="358" width="304" height="8" rx="4" fill="#c3ebc9"/>
+  <text x="256" y="224" text-anchor="middle" fill="#f1f5ef" font-family="Manrope,Arial,sans-serif" font-size="96" font-weight="600" letter-spacing="-4">Open</text>
+  <text x="256" y="326" text-anchor="middle" fill="#c3ebc9" font-family="Manrope,Arial,sans-serif" font-size="104" font-weight="800" letter-spacing="-5">Focus</text>
+  <path d="M112 380H400" stroke="#c3ebc9" stroke-width="7" stroke-linecap="round"/>
 </svg>
