@@ -27,6 +27,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -66,6 +68,8 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     var showUsageSteps by remember { mutableStateOf(false) }
     val disclosurePreferences = remember { context.getSharedPreferences("app_block_disclosure", Context.MODE_PRIVATE) }
     var disclosureAccepted by remember { mutableStateOf(disclosurePreferences.getBoolean("accessibility_disclosure_accepted", false)) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showSelectedOnly by remember { mutableStateOf(false) }
 
     val installedApps = remember {
         val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
@@ -78,6 +82,13 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             }
             .distinctBy { it.packageName }
             .sortedBy { it.label.lowercase() }
+    }
+
+    val filteredApps = installedApps.filter { app ->
+        val query = searchQuery.trim()
+        val matchesQuery = query.isBlank() || app.label.contains(query, ignoreCase = true) || app.packageName.contains(query, ignoreCase = true)
+        val matchesSelection = !showSelectedOnly || app.packageName in blockedPackages
+        matchesQuery && matchesSelection
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -198,14 +209,41 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                 TextButton(onClick = onSchedules) { Text("Schedules") }
             }
         }
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Search installed apps") },
+            placeholder = { Text("Search by app name") }
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text("${filteredApps.size} shown · ${blockedPackages.size} selected", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            FilterChip(
+                selected = showSelectedOnly,
+                onClick = { showSelectedOnly = !showSelectedOnly },
+                label = { Text("Selected only") }
+            )
+        }
         if (installedApps.isEmpty()) {
             Text("No launchable apps were found. Try again after checking Android app visibility settings.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else if (filteredApps.isEmpty()) {
+            Text(
+                if (showSelectedOnly && searchQuery.isBlank()) "No apps selected yet. Turn on an app's switch to add it here."
+                else "No apps match this search. Try another name or turn off the Selected only filter.",
+                modifier = Modifier.padding(vertical = 12.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                items(installedApps, key = { it.packageName }) { app ->
+                items(filteredApps, key = { it.packageName }) { app ->
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
