@@ -3,7 +3,10 @@ package org.openfocus.app.ui.screens
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.provider.Settings
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -134,9 +139,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-                                Text(app.label.take(1).uppercase(), modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp), fontWeight = FontWeight.Bold)
-                            }
+                            InstalledAppIcon(app.packageName, app.label)
                             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                                 Text(app.label, fontWeight = FontWeight.SemiBold)
                                 Text(app.packageName, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
@@ -171,4 +174,28 @@ private fun isBlockingServiceEnabled(context: Context): Boolean {
     return enabledServices.split(':')
         .mapNotNull { ComponentName.unflattenFromString(it) }
         .any { it == expected }
+}
+@Composable
+private fun InstalledAppIcon(packageName: String, label: String) {
+    val context = LocalContext.current
+    val icon = remember(context, packageName) {
+        runCatching {
+            val drawable = context.packageManager.getApplicationIcon(packageName)
+            val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+    if (icon != null) {
+        Image(
+            bitmap = icon,
+            contentDescription = "$label app icon",
+            modifier = Modifier.padding(end = 2.dp).then(Modifier.size(44.dp)),
+            contentScale = ContentScale.Fit
+        )
+    } else {
+        Text(label.take(1).uppercase(), fontWeight = FontWeight.Bold)
+    }
 }
