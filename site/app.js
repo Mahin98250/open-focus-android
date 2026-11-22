@@ -24,36 +24,174 @@
     toastTimer = setTimeout(() => node.classList.remove("show"), 2300);
   }
 
-  // Animated, three-step welcome.
-  const steps = [
-    ["A LITTLE SPACE FOR YOU", "Your attention<br>deserves a garden.", "Make room for the things you care about. We'll help the noisy apps take a little step back.", "Let's make space"],
-    ["GENTLE, NOT GUILTY", "Build habits<br>that feel like you.", "Choose your focus rhythm, set kind boundaries and make steady progress—one small session at a time.", "That sounds good"],
-    ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required for the core experience. Your garden grows on your device.", "Explore my space"]
+  // Personalised first-run flow. The browser preview uses sample apps only.
+  const welcomeSteps = [
+    ["A LITTLE SPACE FOR YOU", "Your attention<br>deserves a garden.", "Make room for the things you care about. We'll help the noisy apps take a little step back.", "✿", "Let's begin"],
+    ["GENTLE, NOT GUILTY", "Build habits<br>that feel like you.", "Choose your focus rhythm, set kind boundaries and make steady progress—one small session at a time.", "✧", "Continue"],
+    ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required. Your personal focus choices stay on this device.", "❀", "Personalise my experience"]
   ];
+  const previewApps = [
+    { name: "Instagram", icon: "◎", category: "Social · Reels", suggested: true },
+    { name: "Snapchat", icon: "👻", category: "Social · Stories", suggested: true },
+    { name: "YouTube", icon: "▶", category: "Video · Shorts", suggested: true },
+    { name: "TikTok", icon: "♪", category: "Short videos", suggested: true },
+    { name: "Facebook", icon: "f", category: "Social feed", suggested: true },
+    { name: "Reddit", icon: "◉", category: "Communities", suggested: true },
+    { name: "Netflix", icon: "N", category: "Streaming", suggested: false },
+    { name: "Discord", icon: "◈", category: "Communities", suggested: false }
+  ];
+  const setup = {
+    studyHours: Number(read().studyHours) || 4,
+    screenHours: Number(read().screenHours) || 5,
+    focusMinutes: Number(read().focusMinutes) || 25,
+    priorities: Array.isArray(read().priorities) ? read().priorities : ["Study & exams"],
+    blockedApps: Array.isArray(read().blockedApps) ? read().blockedApps : ["Instagram", "Snapchat", "YouTube", "TikTok"]
+  };
   let intro = 0;
-  function showStep() {
-    const step = steps[intro];
-    $("#stepCount").textContent = "0" + (intro + 1) + " / 03";
-    $("#onboardEyebrow").textContent = step[0];
-    $("#onboardTitle").innerHTML = step[1];
-    $("#onboardText").textContent = step[2];
-    $("#onboardNext").innerHTML = step[3] + ' <span>→</span>';
+
+  function renderScanner() {
+    let html = "<div class='scan-summary'><span class='scan-pulse'>✦</span><div><strong>PREVIEW SCANNER</strong><small>8 sample apps · 6 suggested distractions</small></div><span class='preview-tag'>DEMO</span></div>";
+    html += "<p class='question-note'>The web preview cannot inspect your phone. This is a sample scan so you can try the flow. The Android app will scan installed launcher apps locally.</p>";
+    html += "<div class='scan-actions'><button type='button' class='text-button' id='selectSuggested'>Select suggestions</button><button type='button' class='text-button' id='clearSelected'>Clear</button></div><div class='scan-app-list'>";
+    html += previewApps.map(function(app) {
+      const selected = setup.blockedApps.includes(app.name);
+      return "<button type='button' class='scan-app " + (selected ? "selected" : "") + "' data-scan-app='" + app.name + "'><span class='scan-app-icon'>" + app.icon + "</span><span class='scan-app-copy'><strong>" + app.name + "</strong><small>" + app.category + "</small></span><span class='scan-check'>" + (selected ? "✓" : "+") + "</span></button>";
+    }).join("");
+    html += "</div><p class='question-note'>Blocking Instagram pauses the whole app, not only Reels. Blocking YouTube pauses the whole app, not only Shorts.</p>";
+    return html;
   }
+
+  function renderStep() {
+    const introStep = intro < 3;
+    const extra = $("#onboardExtra");
+    $("#stepCount").textContent = String(intro + 1).padStart(2, "0") + " / 08";
+    $("#onboardProgress").style.width = ((intro + 1) / 8 * 100) + "%";
+    $("#onboarding").classList.toggle("question-step", !introStep);
+    $("#onboarding").dataset.stage = String(intro);
+    $("#skipIntro").hidden = introStep || intro === 7;
+    if (introStep) {
+      const step = welcomeSteps[intro];
+      $("#onboardEyebrow").textContent = step[0];
+      $("#onboardTitle").innerHTML = step[1];
+      $("#onboardText").textContent = step[2];
+      $("#introSymbol").textContent = step[3];
+      extra.innerHTML = "";
+      $("#onboardNext").innerHTML = step[4] + " <span>→</span>";
+      return;
+    }
+
+    let eyebrow = "", title = "", description = "", html = "", action = "";
+    if (intro === 3) {
+      eyebrow = "YOUR DAILY GOAL";
+      title = "How many hours would you like to study each day?";
+      description = "Choose a target that feels realistic. You can change it whenever you need.";
+      html = "<div class='goal-card'><span>YOUR STUDY TARGET</span><strong id='goalValue'>" + setup.studyHours.toFixed(1) + "<small> hours / day</small></strong><input id='studyGoal' type='range' min='1' max='12' step='.5' value='" + setup.studyHours + "'><div class='range-ends'><span>1 hour</span><span>12 hours</span></div></div><p class='question-note'>This is a personal goal, not a judgement or a competition.</p>";
+      action = "Continue";
+    } else if (intro === 4) {
+      eyebrow = "YOUR CURRENT ROUTINE";
+      title = "How much time do you spend on your phone?";
+      description = "An estimate is enough. Then choose a focus-session length that feels comfortable.";
+      const screenChoices = [[2,"Under 3 hours"],[4,"3–4 hours"],[5,"4–6 hours"],[7,"6–8 hours"],[9,"More than 8 hours"]];
+      html = "<div class='choice-grid'>" + screenChoices.map(function(choice) {
+        return "<button class='choice-card " + (setup.screenHours === choice[0] ? "selected" : "") + "' data-screen-hours='" + choice[0] + "'>" + choice[1] + "</button>";
+      }).join("") + "</div><h3 class='question-subtitle'>Your preferred focus session</h3><div class='choice-row'>" + [25,45,60].map(function(minutes) {
+        return "<button class='choice-pill " + (setup.focusMinutes === minutes ? "selected" : "") + "' data-focus-minutes='" + minutes + "'>" + minutes + " min</button>";
+      }).join("") + "</div>";
+      action = "Choose my priorities";
+    } else if (intro === 5) {
+      eyebrow = "WHAT MATTERS MOST TO YOU?";
+      title = "What would you like to improve?";
+      description = "Pick the things that matter to you. We'll use them to personalise your focus space.";
+      const choices = ["Study & exams","Less scrolling","Better sleep","Healthier routine","More time for hobbies"];
+      html = "<div class='priority-list'>" + choices.map(function(value) {
+        const selected = setup.priorities.includes(value);
+        return "<button class='priority-choice " + (selected ? "selected" : "") + "' data-priority='" + value + "'><span>" + (selected ? "✓" : "＋") + "</span>" + value + "</button>";
+      }).join("") + "</div>";
+      action = "Scan my apps";
+    } else if (intro === 6) {
+      eyebrow = "YOUR PHONE, UNDER YOUR CONTROL";
+      title = "Let's find your distractions.";
+      description = "Review these suggested apps and choose which ones should pause during focus time.";
+      html = renderScanner();
+      action = "Create my focus plan";
+    } else {
+      eyebrow = "YOUR PLAN IS TAKING ROOT";
+      title = "A little more room for what matters.";
+      description = "Your starting plan is ready. You can update every choice later.";
+      html = "<div class='summary-card'><div><span>Daily study goal</span><strong>" + setup.studyHours.toFixed(1) + " hours</strong></div><div><span>Daily phone use estimate</span><strong>" + setup.screenHours + " hours</strong></div><div><span>Focus session</span><strong>" + setup.focusMinutes + " minutes</strong></div><div><span>Apps on pause list</span><strong>" + setup.blockedApps.length + "</strong></div><div><span>Your priorities</span><strong>" + setup.priorities.length + " selected</strong></div></div><p class='question-note'>This browser preview only simulates app selection. Real Android blocking requires you to enable the app's Accessibility service yourself.</p>";
+      action = "Enter my focus space";
+    }
+
+    $("#onboardEyebrow").textContent = eyebrow;
+    $("#onboardTitle").textContent = title;
+    $("#onboardText").textContent = description;
+    $("#introSymbol").textContent = intro === 6 ? "◉" : intro === 7 ? "✿" : "✧";
+    extra.innerHTML = html;
+    $("#onboardNext").innerHTML = action + " <span>→</span>";
+
+    const goal = $("#studyGoal");
+    if (goal) goal.addEventListener("input", function() {
+      setup.studyHours = Number(goal.value);
+      $("#goalValue").innerHTML = setup.studyHours.toFixed(1) + "<small> hours / day</small>";
+    });
+    $$(".choice-card", extra).forEach(function(button) {
+      button.addEventListener("click", function() { setup.screenHours = Number(button.dataset.screenHours); renderStep(); });
+    });
+    $$(".choice-pill", extra).forEach(function(button) {
+      button.addEventListener("click", function() { setup.focusMinutes = Number(button.dataset.focusMinutes); renderStep(); });
+    });
+    $$(".priority-choice", extra).forEach(function(button) {
+      button.addEventListener("click", function() {
+        const value = button.dataset.priority;
+        setup.priorities = setup.priorities.includes(value) ? setup.priorities.filter(function(item) { return item !== value; }) : setup.priorities.concat(value);
+        renderStep();
+      });
+    });
+    $$(".scan-app", extra).forEach(function(button) {
+      button.addEventListener("click", function() {
+        const value = button.dataset.scanApp;
+        setup.blockedApps = setup.blockedApps.includes(value) ? setup.blockedApps.filter(function(item) { return item !== value; }) : setup.blockedApps.concat(value);
+        renderStep();
+      });
+    });
+    $("#selectSuggested")?.addEventListener("click", function() {
+      setup.blockedApps = previewApps.filter(function(app) { return app.suggested; }).map(function(app) { return app.name; });
+      renderStep();
+    });
+    $("#clearSelected")?.addEventListener("click", function() { setup.blockedApps = []; renderStep(); });
+  }
+
   function enterApp() {
-    save({ onboarded: true });
+    save({
+      onboarded: true,
+      studyHours: setup.studyHours,
+      screenHours: setup.screenHours,
+      focusMinutes: setup.focusMinutes,
+      priorities: setup.priorities,
+      blockedApps: setup.blockedApps
+    });
     $("#onboarding").classList.add("hidden");
     $("#appShell").classList.remove("hidden");
     go("home");
+    renderBlocked();
+    toast("Your personal focus space is ready");
   }
+
   if (read().onboarded) {
     $("#onboarding").classList.add("hidden");
     $("#appShell").classList.remove("hidden");
+  } else {
+    renderStep();
   }
-  $("#onboardNext").addEventListener("click", () => {
-    intro += 1;
-    if (intro >= steps.length) enterApp(); else showStep();
+  $("#onboardNext").addEventListener("click", function() {
+    if (intro >= 7) enterApp();
+    else { intro += 1; renderStep(); }
   });
-  $("#skipIntro").addEventListener("click", enterApp);
+  $("#skipIntro").addEventListener("click", function() {
+    if (intro === 6) setup.blockedApps = [];
+    intro += 1;
+    renderStep();
+  });
 
   // Single-page navigation.
   function go(page) {
