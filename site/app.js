@@ -26,9 +26,9 @@
 
   // Personalised first-run flow. The browser preview uses sample apps only.
   const welcomeSteps = [
-    ["A LITTLE SPACE FOR YOU", "Your attention<br>deserves a garden.", "Make room for the things you care about. We'll help the noisy apps take a little step back.", "✿", "Let's begin"],
-    ["GENTLE, NOT GUILTY", "Build habits<br>that feel like you.", "Choose your focus rhythm, set kind boundaries and make steady progress—one small session at a time.", "✧", "Continue"],
-    ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required. Your personal focus choices stay on this device.", "❀", "Personalise my experience"]
+    ["A LITTLE SPACE FOR YOU", "Your attention<br>deserves a garden.", "Make room for the things you care about. We'll help the noisy apps take a little step back.", "◎", "Let's begin"],
+    ["GENTLE, NOT GUILTY", "Build habits<br>that feel like you.", "Choose your focus rhythm, set kind boundaries and make steady progress—one small session at a time.", "◌", "Continue"],
+    ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required. Your personal focus choices stay on this device.", "◉", "Personalise my experience"]
   ];
   const previewApps = [
     { name: "Instagram", logo: "instagram", category: "Social · Reels", suggested: true },
@@ -125,7 +125,7 @@
     $("#onboardEyebrow").textContent = eyebrow;
     $("#onboardTitle").textContent = title;
     $("#onboardText").textContent = description;
-    $("#introSymbol").textContent = intro === 6 ? "◉" : intro === 7 ? "✿" : "✧";
+    $("#introSymbol").textContent = intro === 6 ? "◉" : intro === 7 ? "◎" : "◌";
     extra.innerHTML = html;
     $("#onboardNext").innerHTML = action + " <span>→</span>";
 
@@ -637,7 +637,7 @@
     row.dataset.scheduleId = schedule.id;
     const symbol = document.createElement("div");
     symbol.className = "schedule-symbol mint";
-    symbol.textContent = "✧";
+    symbol.textContent = "◌";
     const info = document.createElement("div");
     info.className = "schedule-info";
     const title = document.createElement("strong");
