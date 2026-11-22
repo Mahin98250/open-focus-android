@@ -2,6 +2,8 @@ package org.openfocus.app.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -9,6 +11,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +51,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -395,6 +400,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 5.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
+                                            InstalledAppIcon(app.packageName, app.label)
                                             Checkbox(
                                                 checked = checked,
                                                 onCheckedChange = { selected ->
@@ -508,5 +514,30 @@ private fun SummaryLine(label: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
         Text(value, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun InstalledAppIcon(packageName: String, label: String) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val icon = remember(context, packageName) {
+        runCatching {
+            val drawable = context.packageManager.getApplicationIcon(packageName)
+            val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+    if (icon != null) {
+        Image(
+            bitmap = icon,
+            contentDescription = "$label app icon",
+            modifier = Modifier.size(42.dp).padding(end = 8.dp),
+            contentScale = ContentScale.Fit
+        )
+    } else {
+        Text(label.take(1).uppercase(), modifier = Modifier.padding(horizontal = 12.dp), fontWeight = FontWeight.Bold)
     }
 }
