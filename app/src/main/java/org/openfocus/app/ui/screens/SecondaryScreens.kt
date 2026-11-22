@@ -520,8 +520,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("ABOUT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                Text("Focus Garden · Working title", fontWeight = FontWeight.SemiBold)
-                Text("Independent open-source Android project. The final public brand is not selected yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Open Focus", fontWeight = FontWeight.SemiBold)
+                Text("An independent, open-source digital-wellbeing app built to help you protect your attention.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("Core and advanced features are intended to remain free. This is an early build; not all planned features are implemented.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
