@@ -962,8 +962,8 @@ private fun buildOpenFocusLocalExport(context: android.content.Context): String 
 }
 
 private fun clearOpenFocusLocalData(context: android.content.Context) {
-    // Cancel any scheduled completion alarm before clearing the timer's preferences.
-    FocusTimerStore(context).reset()
+    // Cancel any scheduled completion alarm, including during a strict session.
+    FocusTimerStore(context).clearForDataDeletion()
     listOf(
         "app_onboarding",
         "app_block_rules",
