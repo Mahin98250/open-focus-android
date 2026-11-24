@@ -116,7 +116,7 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
                     when {
                         goalMillis <= 0L -> "Set a daily goal to track your progress here."
                         todayFocusMillis >= goalMillis -> "Daily goal reached. Great work protecting your time."
-                        else -> "\${formatFocusDuration(goalMillis - todayFocusMillis)} left to reach your goal · \${todaySessions.size} completed sessions"
+                        else -> "${formatFocusDuration(goalMillis - todayFocusMillis)} left to reach your goal · ${todaySessions.size} completed sessions"
                     },
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
@@ -126,7 +126,7 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MetricCard("BLOCKED APPS", selectedAppCount.toString(), "On your pause list", Modifier.weight(1f))
-            MetricCard("TASKS DONE", "\${completedTaskCount} / \${tasks.size}", "In your planner", Modifier.weight(1f))
+            MetricCard("TASKS DONE", "${completedTaskCount} / ${tasks.size}", "In your planner", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MetricCard("FOCUS SESSIONS", sessions.size.toString(), "Completed on this device", Modifier.weight(1f))
@@ -171,11 +171,11 @@ private fun MetricCard(label: String, value: String, caption: String, modifier: 
 }
 
 private fun Float.toHoursLabel(): String =
-    if (this % 1f == 0f) "\${toInt()}h/day" else "\${"%.1f".format(Locale.ROOT, this)}h/day"
+    if (this % 1f == 0f) "${toInt()}h/day" else "${"%.1f".format(Locale.ROOT, this)}h/day"
 
 private fun formatFocusDuration(durationMillis: Long): String {
     val totalMinutes = durationMillis / 60_000L
     val hours = totalMinutes / 60L
     val minutes = totalMinutes % 60L
-    return if (hours > 0L) "\${hours}h \${minutes}m" else "\${minutes}m"
+    return if (hours > 0L) "${hours}h ${minutes}m" else "${minutes}m"
 }
