@@ -308,10 +308,19 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                                     }
                                 )
                                 Box {
-                                    TextButton(onClick = { expandedLimitPackage = app.packageName }) {
+                                    TextButton(
+                                        onClick = {
+                                            if (usageAccessEnabled) {
+                                                expandedLimitPackage = app.packageName
+                                            } else {
+                                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                            }
+                                        }
+                                    ) {
                                         val minutes = dailyLimits[app.packageName]
                                         Text(
                                             when {
+                                                !usageAccessEnabled -> "Enable access"
                                                 minutes == null -> "No limit"
                                                 minutes < 60 -> "${minutes}m/day"
                                                 minutes % 60 == 0 -> "${minutes / 60}h/day"
