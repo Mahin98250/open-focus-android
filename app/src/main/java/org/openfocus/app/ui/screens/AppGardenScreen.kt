@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,6 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -78,24 +81,30 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     var showSelectedOnly by remember { mutableStateOf(false) }
     var blockerMode by remember { mutableStateOf("Apps") }
 
-    val installedApps = remember {
-        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        @Suppress("DEPRECATION")
-        context.packageManager.queryIntentActivities(launcherIntent, 0)
-            .mapNotNull { resolve ->
-                val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
-                if (packageName == context.packageName) return@mapNotNull null
-                LaunchableApp(packageName, resolve.loadLabel(context.packageManager).toString())
-            }
-            .distinctBy { it.packageName }
-            .sortedBy { it.label.lowercase() }
+    // Package discovery can be slow on devices with many installed apps.
+    // Keep it off the main thread so opening the blocker screen stays responsive.
+    val installedApps by produceState<List<LaunchableApp>>(initialValue = emptyList(), key1 = context) {
+        value = withContext(Dispatchers.IO) {
+            val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            @Suppress("DEPRECATION")
+            context.packageManager.queryIntentActivities(launcherIntent, 0)
+                .mapNotNull { resolve ->
+                    val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
+                    if (packageName == context.packageName) return@mapNotNull null
+                    LaunchableApp(packageName, resolve.loadLabel(context.packageManager).toString())
+                }
+                .distinctBy { it.packageName }
+                .sortedBy { it.label.lowercase() }
+        }
     }
 
-    val filteredApps = installedApps.filter { app ->
-        val query = searchQuery.trim()
-        val matchesQuery = query.isBlank() || app.label.contains(query, ignoreCase = true) || app.packageName.contains(query, ignoreCase = true)
-        val matchesSelection = !showSelectedOnly || app.packageName in blockedPackages
-        matchesQuery && matchesSelection
+    val filteredApps = remember(installedApps, searchQuery, showSelectedOnly, blockedPackages) {
+        installedApps.filter { app ->
+            val query = searchQuery.trim()
+            val matchesQuery = query.isBlank() || app.label.contains(query, ignoreCase = true) || app.packageName.contains(query, ignoreCase = true)
+            val matchesSelection = !showSelectedOnly || app.packageName in blockedPackages
+            matchesQuery && matchesSelection
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -449,15 +458,23 @@ private fun isBlockingServiceEnabled(context: Context): Boolean {
 @Composable
 private fun InstalledAppIcon(packageName: String, label: String) {
     val context = LocalContext.current
-    val icon = remember(context, packageName) {
-        runCatching {
-            val drawable = context.packageManager.getApplicationIcon(packageName)
-            val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
-            bitmap.asImageBitmap()
-        }.getOrNull()
+    // Resolving and rasterising package icons on the UI thread creates visible
+    // stutters while scrolling. Load each icon asynchronously and cache its state.
+    val icon by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null,
+        key1 = context,
+        key2 = packageName
+    ) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val drawable = context.packageManager.getApplicationIcon(packageName)
+                val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
+                drawable.draw(canvas)
+                bitmap.asImageBitmap()
+            }.getOrNull()
+        }
     }
     if (icon != null) {
         Image(
