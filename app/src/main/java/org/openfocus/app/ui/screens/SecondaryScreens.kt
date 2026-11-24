@@ -46,6 +46,7 @@ import org.openfocus.app.blocking.AppBlockSchedule
 import org.openfocus.app.blocking.BlockScheduleStore
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.openfocus.app.planner.PlannerStore
 import org.openfocus.app.planner.PlannerTask
 
