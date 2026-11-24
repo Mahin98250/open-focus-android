@@ -45,8 +45,10 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     private val overlayWatchdog = object : Runnable {
         override fun run() {
             if (youtubeStudyOverlay) {
-                val activePackage = runCatching { rootInActiveWindow?.packageName?.toString() }.getOrNull()
-                if (activePackage == YOUTUBE_PACKAGE && youtubeStudyModeStore.isEnabled()) {
+                if (youtubeStudyModeStore.isEnabled()) {
+                    // The foreground-window event below clears this guard when the
+                    // user leaves YouTube. Do not rely on rootInActiveWindow here:
+                    // accessibility overlays can make that root temporarily null.
                     mainHandler.postDelayed(this, WATCHDOG_INTERVAL_MILLIS)
                 } else {
                     youtubeStudyOverlay = false
@@ -235,6 +237,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             blockerOverlay = root
             mainHandler.removeCallbacks(overlayWatchdog)
             mainHandler.postDelayed(overlayWatchdog, WATCHDOG_INTERVAL_MILLIS)
+        }.onFailure {
+            if (studyMode) performGlobalAction(GLOBAL_ACTION_HOME)
         }
     }
 
@@ -279,6 +283,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     private fun removeBlockerOverlay() {
         mainHandler.removeCallbacks(overlayWatchdog)
+        youtubeStudyOverlay = false
         val view = blockerOverlay ?: return
         blockerOverlay = null
         runCatching {
