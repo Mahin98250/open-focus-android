@@ -26,6 +26,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,8 +40,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import org.openfocus.app.blocking.AppBlockStore
 import org.openfocus.app.focus.FocusSessionHistoryStore
+import org.openfocus.app.focus.FocusTimerStore
 import org.openfocus.app.planner.PlannerStore
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -48,6 +54,21 @@ import java.util.Locale
 fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
     val sessions = remember(context) { FocusSessionHistoryStore(context).load() }
+    val timerStore = remember(context) { FocusTimerStore(context) }
+    var timerSnapshot by remember(context) { mutableStateOf(timerStore.load()) }
+    LaunchedEffect(timerStore) {
+        while (true) {
+            timerSnapshot = timerStore.load()
+            delay(1_000L)
+        }
+    }
+    val timerStatus = when {
+        timerSnapshot.isRunning -> "IN FOCUS"
+        timerSnapshot.isCompleted -> "COMPLETED"
+        timerSnapshot.remainingMillis < timerSnapshot.totalDurationMillis -> "PAUSED"
+        else -> "READY"
+    }
+    val timerClock = formatTimerClock(timerSnapshot.remainingMillis)
     val selectedAppCount = remember(context) { AppBlockStore(context).blockedPackages().size }
     val tasks = remember(context) { PlannerStore(context).load() }
     val dailyStudyGoal = remember(context) {
@@ -100,7 +121,7 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
             colors = CardDefaults.cardColors(containerColor = Color(0xFF14271A))) {
             Box(Modifier.fillMaxWidth()
                 .background(Brush.linearGradient(listOf(Color(0xFF234C2A), Color(0xFF14271A), Color(0xFF101A14))))
-                .padding(20.dp)) {
+                .padding(16.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(11.dp)) {
                         Surface(shape = RoundedCornerShape(50), color = Color(0xFF365B31)) {
@@ -113,14 +134,14 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
                             style = MaterialTheme.typography.bodySmall)
                         Button(onClick = { onNavigate("focus") }) { Text("Start focusing  →") }
                     }
-                    Box(Modifier.padding(start = 8.dp).size(112.dp)
+                    Box(Modifier.padding(start = 7.dp).size(88.dp)
                         .border(1.dp, Color(0xFFB8E89B).copy(alpha = .32f), CircleShape).padding(10.dp)
                         .border(1.dp, Color(0xFFB8E89B).copy(alpha = .24f), CircleShape),
                         contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text("◷", color = Color(0xFFD9F6C2), fontSize = 27.sp)
-                            Text("25:00", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
-                            Text("READY", color = Color(0xFFB9D0B9), fontSize = 8.sp, letterSpacing = 1.2.sp)
+                            Text(timerClock, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp, maxLines = 1)
+                            Text(timerStatus, color = Color(0xFFB9D0B9), fontSize = 7.sp, letterSpacing = 0.8.sp, maxLines = 1)
                         }
                     }
                 }
@@ -214,6 +235,13 @@ private fun MetricCard(label: String, value: String, caption: String, modifier: 
 private fun Float.toHoursLabel(): String {
     val decimalHours = "%.1f".format(Locale.ROOT, this)
     return if (this % 1f == 0f) "${toInt()}h/day" else "${decimalHours}h/day"
+}
+
+private fun formatTimerClock(durationMillis: Long): String {
+    val totalSeconds = (durationMillis.coerceAtLeast(0L) + 999L) / 1_000L
+    val minutes = totalSeconds / 60L
+    val seconds = totalSeconds % 60L
+    return "%02d:%02d".format(Locale.ROOT, minutes, seconds)
 }
 
 private fun formatFocusDuration(durationMillis: Long): String {
