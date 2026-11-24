@@ -3,10 +3,8 @@ package org.openfocus.app.ui
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -39,8 +37,8 @@ private data class MainDestination(val route: String, val label: String, val gly
 private val mainDestinations = listOf(
     MainDestination("home", "Home", "⌂"),
     MainDestination("focus", "Focus", "◷"),
-    MainDestination("apps", "Apps", "◉"),
-    MainDestination("planner", "Plan", "☷")
+    MainDestination("apps", "Block", "⊘"),
+    MainDestination("planner", "Plan", "▦")
 )
 
 @Composable
@@ -61,24 +59,19 @@ fun FocusGardenApp() {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(color = MaterialTheme.colorScheme.background, tonalElevation = 2.dp) {
+            Surface(color = MaterialTheme.colorScheme.background) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 13.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "Open Focus",
-                            color = MaterialTheme.colorScheme.onBackground,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = (-0.7).sp,
-                            style = MaterialTheme.typography.titleLarge
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Text("◉", color = MaterialTheme.colorScheme.primary, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                        Text("Open Focus", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp, style = MaterialTheme.typography.titleLarge)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { currentRoute = "insights" }) { Text("Insights") }
-                        TextButton(onClick = { currentRoute = "settings" }) { Text("Settings") }
+                        TextButton(onClick = { currentRoute = "settings" }) { Text("⋯") }
                     }
                 }
             }
@@ -86,11 +79,18 @@ fun FocusGardenApp() {
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 mainDestinations.forEach { destination ->
+                    val selected = currentRoute == destination.route || (destination.route == "apps" && currentRoute == "schedules")
                     NavigationBarItem(
-                        selected = currentRoute == destination.route,
+                        selected = selected,
                         onClick = { currentRoute = destination.route },
-                        icon = { Text(destination.glyph, style = MaterialTheme.typography.titleLarge) },
-                        label = { Text(destination.label) }
+                        icon = {
+                            Text(
+                                destination.glyph,
+                                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                        },
+                        label = { Text(destination.label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
                     )
                 }
             }

@@ -6,13 +6,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 
-data class DailyFocusStat(
-    val date: LocalDate,
-    val label: String,
-    val focusMillis: Long,
-    val barProgress: Float
-)
-
+data class DailyFocusStat(val date: LocalDate, val label: String, val focusMillis: Long, val barProgress: Float)
 data class FocusGrowthSummary(
     val totalSessions: Int,
     val totalFocusMillis: Long,
@@ -53,7 +47,7 @@ object FocusGrowthStats {
         var runningStreak = 0
         var previous: LocalDate? = null
         activeDates.sorted().forEach { date ->
-            runningStreak = if (previous != null && previous!!.plusDays(1) == date) runningStreak + 1 else 1
+            runningStreak = if (previous?.plusDays(1) == date) runningStreak + 1 else 1
             longestStreak = maxOf(longestStreak, runningStreak)
             previous = date
         }

@@ -1,6 +1,9 @@
 package org.openfocus.app.ui.screens
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,27 +11,33 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.remember
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.openfocus.app.blocking.AppBlockStore
 import org.openfocus.app.focus.FocusSessionHistoryStore
 import org.openfocus.app.planner.PlannerStore
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) {
@@ -56,103 +65,94 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
         calendar.add(Calendar.DAY_OF_YEAR, 1)
         start to calendar.timeInMillis
     }
-    val todaySessions = sessions.filter {
-        it.completedAtEpochMillis >= todayRange.first && it.completedAtEpochMillis < todayRange.second
-    }
+    val todaySessions = sessions.filter { it.completedAtEpochMillis >= todayRange.first && it.completedAtEpochMillis < todayRange.second }
     val todayFocusMillis = todaySessions.sumOf { it.durationMillis }
     val goalMillis = (dailyStudyGoal * 3_600_000f).toLong().coerceAtLeast(0L)
-    val goalProgress = if (goalMillis > 0L) {
-        (todayFocusMillis.toFloat() / goalMillis).coerceIn(0f, 1f)
-    } else 0f
-    val animatedGoalProgress = animateFloatAsState(
-        targetValue = goalProgress,
-        label = "daily-focus-goal-progress"
-    ).value
+    val goalProgress = if (goalMillis > 0L) (todayFocusMillis.toFloat() / goalMillis).coerceIn(0f, 1f) else 0f
+    val animatedGoalProgress = animateFloatAsState(targetValue = goalProgress, label = "daily-focus-goal-progress").value
+    val dateLabel = remember { SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(Date()) }
+
     Column(
-        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("A FRESH START", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp)
-            Text("Make room for what matters.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text("A little progress is still progress. What would you like to grow today?", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+            Text(dateLabel.uppercase(Locale.getDefault()), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+            Text("Make today count.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+            Text("Small sessions. Real progress. One day at a time.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-            Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("YOUR FOCUS SPACE", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
-                Text("One thing at a time.", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text("Give your best energy to what matters most.", color = MaterialTheme.colorScheme.onPrimaryContainer)
+
+        Box(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF315C26), Color(0xFF17291A), Color(0xFF101A14))))
+        ) {
+            Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                Text("YOUR NEXT FOCUS SESSION", color = Color(0xFFD5F8B7), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
+                Text("Ready to get in the zone?", color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text("Put your phone aside and give one task your full attention.", color = Color(0xFFD2E2D0), style = MaterialTheme.typography.bodyMedium)
                 Button(onClick = { onNavigate("focus") }) { Text("Start focusing  →") }
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("THE GOAL YOU CHOSE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                Text(
-                    if (dailyStudyGoal > 0f) String.format(java.util.Locale.ROOT, "%.1f hours a day", dailyStudyGoal) else "Choose a daily study goal",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                if (focusPriorities.isNotEmpty()) {
-                    Text(focusPriorities.joinToString(" · "), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                }
-            }
-        }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("TODAY'S FOCUS PROGRESS", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
-                if (goalMillis > 0L) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(formatFocusDuration(todayFocusMillis), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                        Text("${(goalProgress * 100).toInt()}%", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("TODAY'S FOCUS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.sp)
+                        Text(formatFocusDuration(todayFocusMillis), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     }
-                    LinearProgressIndicator(
-                        progress = animatedGoalProgress,
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)
-                    )
-                    Text(
-                        if (todayFocusMillis >= goalMillis) "Daily target reached. Be proud of the time you protected today."
-                        else "${formatFocusDuration(goalMillis - todayFocusMillis)} to reach your ${dailyStudyGoal.toHoursLabel()} target · ${todaySessions.size} completed sessions",
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                } else {
-                    Text("Choose a daily target to make your progress visible.", color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    TextButton(onClick = { onNavigate("settings") }) { Text("Set daily target", color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                    Column(horizontalAlignment = androidx.compose.ui.Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("DAILY GOAL", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                        Text(if (dailyStudyGoal > 0f) dailyStudyGoal.toHoursLabel() else "Not set", fontWeight = FontWeight.SemiBold)
+                    }
                 }
+                LinearProgressIndicator(
+                    progress = animatedGoalProgress,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+                Text(
+                    when {
+                        goalMillis <= 0L -> "Set a daily goal to track your progress here."
+                        todayFocusMillis >= goalMillis -> "Daily goal reached. Great work protecting your time."
+                        else -> "\${formatFocusDuration(goalMillis - todayFocusMillis)} left to reach your goal · \${todaySessions.size} completed sessions"
+                    },
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
-        Text("YOUR DAY AT A GLANCE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            MetricCard("TODAY'S FOCUS", formatFocusDuration(todayFocusMillis), "${todaySessions.size} completed sessions", Modifier.weight(1f))
-            MetricCard("BLOCK LIST", selectedAppCount.toString(), "Apps you selected", Modifier.weight(1f))
+            MetricCard("BLOCKED APPS", selectedAppCount.toString(), "On your pause list", Modifier.weight(1f))
+            MetricCard("TASKS DONE", "\${completedTaskCount} / \${tasks.size}", "In your planner", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            MetricCard("TASKS", completedTaskCount.toString() + " / " + tasks.size, "Completed in your planner", Modifier.weight(1f))
-            MetricCard("SESSIONS", sessions.size.toString(), "Saved on this device", Modifier.weight(1f))
+            MetricCard("FOCUS SESSIONS", sessions.size.toString(), "Completed on this device", Modifier.weight(1f))
+            MetricCard("PRIORITIES", focusPriorities.size.toString(), "Personal focus goals", Modifier.weight(1f))
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("YOUR NEXT SMALL STEP", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                Text("Choose the distractions you want to keep away.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text("Selected apps are blocked during a running focus session or an active recurring schedule, after you explicitly enable the Android accessibility service.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedButton(onClick = { onNavigate("apps") }) { Text("Choose apps to pause") }
+
+        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("QUICK ACCESS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
+                Text("Make it yours", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                OutlinedButton(onClick = { onNavigate("apps") }, modifier = Modifier.weight(1f)) { Text("App blocker") }
+                OutlinedButton(onClick = { onNavigate("planner") }, modifier = Modifier.weight(1f)) { Text("Study planner") }
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("GROW AT YOUR OWN PACE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
-                Text("Progress isn't a race.", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Your dashboard will fill with real focus sessions and locally collected data as you use the app. No sample statistics are presented as personal results.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
+
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp)) {
+            Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Text("KEEP YOUR MOMENTUM", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                Text("Your progress, at a glance.", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("See your streaks, weekly focus time and achievements—calculated from completed sessions stored on this phone.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 Row {
-                    TextButton(onClick = { onNavigate("insights") }) { Text("Insights") }
-                    Spacer(Modifier.width(4.dp))
-                    TextButton(onClick = { onNavigate("growth") }) { Text("Growth") }
+                    TextButton(onClick = { onNavigate("insights") }) { Text("View insights") }
+                    Spacer(Modifier.width(3.dp))
+                    TextButton(onClick = { onNavigate("growth") }) { Text("Growth & streaks") }
                 }
             }
         }
@@ -161,7 +161,7 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
 
 @Composable
 private fun MetricCard(label: String, value: String, caption: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(20.dp)) {
         Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
             Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -171,11 +171,11 @@ private fun MetricCard(label: String, value: String, caption: String, modifier: 
 }
 
 private fun Float.toHoursLabel(): String =
-    if (this % 1f == 0f) "${toInt()}h/day" else "${"%.1f".format(java.util.Locale.ROOT, this)}h/day"
+    if (this % 1f == 0f) "\${toInt()}h/day" else "\${"%.1f".format(Locale.ROOT, this)}h/day"
 
 private fun formatFocusDuration(durationMillis: Long): String {
     val totalMinutes = durationMillis / 60_000L
     val hours = totalMinutes / 60L
     val minutes = totalMinutes % 60L
-    return if (hours > 0L) "${hours}h ${minutes}m" else "${minutes}m"
+    return if (hours > 0L) "\${hours}h \${minutes}m" else "\${minutes}m"
 }
