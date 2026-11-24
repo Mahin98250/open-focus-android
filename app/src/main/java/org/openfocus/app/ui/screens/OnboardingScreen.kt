@@ -399,7 +399,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Text("YOUR PHONE, UNDER YOUR CONTROL", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                                 Text("Let's find your distractions.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                                 Text(
-                                    "We scanned the apps that appear in your launcher. Review the suggestions and choose which apps you want paused during focus time. Choosing Instagram blocks the whole app, not only Reels; the same applies to YouTube and Shorts.",
+                                    "We scanned the apps that appear in your launcher. Review the suggestions and choose which apps you want paused during focus time. Choosing an app pauses the whole app during focus time. If you enable YouTube Study Mode later, verified study videos can still play while other YouTube screens remain paused.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
