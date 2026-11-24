@@ -31,6 +31,7 @@ import org.openfocus.app.ui.screens.InsightsScreen
 import org.openfocus.app.ui.screens.OnboardingScreen
 import org.openfocus.app.ui.screens.OverviewScreen
 import org.openfocus.app.ui.screens.PlannerScreen
+import org.openfocus.app.ui.screens.PermissionSetupScreen
 import org.openfocus.app.ui.screens.ScheduleScreen
 import org.openfocus.app.ui.screens.SettingsScreen
 
@@ -54,6 +55,15 @@ fun FocusGardenApp() {
         OnboardingScreen {
             preferences.edit().putBoolean("completed", true).apply()
             onboarded = true
+            currentRoute = "permissions"
+        }
+        return
+    }
+
+    if (currentRoute == "permissions") {
+        PermissionSetupScreen {
+            preferences.edit().putBoolean("permissions_setup_seen", true).apply()
+            currentRoute = "home"
         }
         return
     }
