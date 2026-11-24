@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -70,6 +71,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     var disclosureAccepted by remember { mutableStateOf(disclosurePreferences.getBoolean("accessibility_disclosure_accepted", false)) }
     var searchQuery by remember { mutableStateOf("") }
     var showSelectedOnly by remember { mutableStateOf(false) }
+    var blockerMode by remember { mutableStateOf("Apps") }
 
     val installedApps = remember {
         val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
@@ -110,6 +112,19 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             Text("Choose apps to pause.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Text("Choose which apps take a pause during your focus sessions or recurring schedules.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            listOf("Apps", "Reels", "YouTube", "Websites").forEach { tab ->
+                FilterChip(
+                    selected = blockerMode == tab,
+                    onClick = { blockerMode = tab },
+                    label = { Text(tab) }
+                )
+            }
+        }
+        if (blockerMode == "Apps") {
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
@@ -312,6 +327,57 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall
         )
+        } else {
+            val title = when (blockerMode) {
+                "Reels" -> "Reels & Shorts"
+                "YouTube" -> "YouTube Study Mode"
+                else -> "Website protection"
+            }
+            val description = when (blockerMode) {
+                "Reels" -> "Regain-style short-feed controls need screen-level detection. Open Focus currently detects the foreground app only, so it can pause Instagram or YouTube as a whole, but cannot isolate Reels or Shorts."
+                "YouTube" -> "A channel allow-list and Shorts restriction require reading the YouTube screen structure. That capability is not enabled in this build, so no channel-level filtering is active."
+                else -> "Website filtering needs a dedicated local VPN-based filter and Android's VPN consent. That service is not included yet, so websites are not currently filtered."
+            }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                    Text(
+                        when (blockerMode) {
+                            "Reels" -> "SHORT-FORM CONTENT"
+                            "YouTube" -> "STUDY-ONLY BROWSING"
+                            else -> "BROWSER CONTROL"
+                        },
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 1.3.sp
+                    )
+                    Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    androidx.compose.material3.Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+                    ) {
+                        Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("◷", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
+                            Column(Modifier.weight(1f).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text("Not active in this build", fontWeight = FontWeight.SemiBold)
+                                Text("No hidden permissions or fake blocking.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+                    if (blockerMode == "Reels") {
+                        Text("AVAILABLE ALTERNATIVE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                        Text("Add the full Instagram, YouTube, Snapchat or Facebook app to your pause list. This blocks that app while your focus timer or schedule is active.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Button(onClick = { blockerMode = "Apps" }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Manage whole-app blocks")
+                    }
+                }
+            }
+        }
     }
 }
 

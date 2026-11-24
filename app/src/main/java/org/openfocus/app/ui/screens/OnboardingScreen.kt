@@ -180,7 +180,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
     Surface(color = MaterialTheme.colorScheme.background) {
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            modifier = Modifier.fillMaxSize()
+                .background(Brush.verticalGradient(listOf(Color(0xFF0A160E), MaterialTheme.colorScheme.background, Color(0xFF080D0A))))
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 22.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -190,7 +192,8 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("◉", color = MaterialTheme.colorScheme.primary, fontSize = 25.sp, fontWeight = FontWeight.Bold)
                         Text("Open Focus", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.8).sp, style = MaterialTheme.typography.titleLarge)
                     }
                     Text(
@@ -206,7 +209,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         Text("${page + 1} OF 8", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Box(
-                        Modifier.fillMaxWidth().height(5.dp)
+                        Modifier.fillMaxWidth().height(6.dp)
                             .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                     ) {
                         Box(
@@ -235,7 +238,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 verticalArrangement = Arrangement.spacedBy(15.dp)
                             ) {
                                 Box(
-                                    Modifier.fillMaxWidth().height(245.dp),
+                                    Modifier.fillMaxWidth().height(245.dp)
+                                        .background(
+                                            Brush.linearGradient(listOf(Color(0xFF1A512C), Color(0xFF102B1B), Color(0xFF0A160E))),
+                                            androidx.compose.foundation.shape.RoundedCornerShape(28.dp)
+                                        ),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Box(
