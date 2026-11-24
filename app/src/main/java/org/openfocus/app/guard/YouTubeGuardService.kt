@@ -14,9 +14,12 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
- * Watches the YouTube app. If the video on screen looks like entertainment
- * (or it is a Short), a full-screen "Back to focus" screen appears and YouTube
- * is sent to the background. Educational videos are left alone.
+ * One accessibility service, two jobs:
+ *
+ * 1. App blocker: while a focus session is running (see [BlockerState]), opening a
+ *    blocked app shows a full-screen "Back to focus" screen and returns to the home screen.
+ * 2. YouTube guard: entertainment videos and Shorts get the same treatment;
+ *    study-related videos keep playing.
  *
  * Everything happens on the device; screen text is never stored or uploaded.
  */
@@ -27,9 +30,21 @@ class YouTubeGuardService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        if (event.packageName?.toString() != YOUTUBE_PACKAGE) return
-        if (!GuardPrefs.isEnabled(this)) return
+        val pkg = event.packageName?.toString() ?: return
         if (overlay != null) return
+
+        // 1) App blocker: runs on window changes only, so it stays cheap.
+        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            pkg != packageName &&
+            BlockerState.shouldBlock(this, pkg)
+        ) {
+            block("This app is blocked during your focus session.")
+            return
+        }
+
+        // 2) YouTube guard.
+        if (pkg != YOUTUBE_PACKAGE) return
+        if (!GuardPrefs.isEnabled(this)) return
 
         val now = SystemClock.elapsedRealtime()
         if (now - lastCheck < CHECK_INTERVAL_MS) return
