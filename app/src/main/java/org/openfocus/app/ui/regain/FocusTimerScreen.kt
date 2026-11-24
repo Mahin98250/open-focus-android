@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import org.openfocus.app.guard.BlockerState
 
 enum class TimerMode(val label: String) {
     Focus("Focus"),
@@ -60,6 +61,7 @@ enum class PomodoroPhase(val label: String, val minutes: Int) {
 /**
  * Clean full-screen focus timer: Focus, Pomodoro and Stopwatch modes,
  * animated progress ring, Strict Mode, sound + haptic feedback.
+ * While a focus block is running it also switches the app blocker on.
  *
  * Drop it anywhere in your navigation: FocusTimerScreen()
  */
@@ -71,6 +73,7 @@ fun FocusTimerScreen(
     val context = LocalContext.current
     val sounds = remember { FocusSounds(context) }
     DisposableEffect(Unit) { onDispose { sounds.release() } }
+    DisposableEffect(Unit) { onDispose { BlockerState.stopSession(context) } }
 
     var mode by remember { mutableStateOf(TimerMode.Focus) }
     var phase by remember { mutableStateOf(PomodoroPhase.Focus) }
@@ -110,6 +113,17 @@ fun FocusTimerScreen(
                 }
                 elapsed = 0
             }
+        }
+    }
+
+    // App blocker: on only while a focus block is actually running (not on pause or breaks).
+    val blockingNow = running && (mode != TimerMode.Pomodoro || phase == PomodoroPhase.Focus)
+    LaunchedEffect(blockingNow, mode, phase, totalSeconds) {
+        if (blockingNow) {
+            val remaining = if (mode == TimerMode.Stopwatch) 4 * 3600 else (totalSeconds - elapsed).coerceAtLeast(0)
+            BlockerState.startSession(context, remaining + 120)
+        } else {
+            BlockerState.stopSession(context)
         }
     }
 
