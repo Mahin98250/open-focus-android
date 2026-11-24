@@ -26,7 +26,7 @@ object YoutubeStudyClassifier {
         "mathematics", "maths", "algebra", "geometry", "trigonometry",
         "physics", "chemistry", "biology", "science", "history", "geography",
         "economics", "english grammar", "grammar", "exam preparation",
-        "revision", "question paper", "problem solving", "how to", "course",
+        "revision", "question paper", "problem solving",
         "coding", "programming", "python", "javascript", "java programming",
         "computer science", "engineering", "robotics", "artificial intelligence",
         "machine learning", "documentary", "educational", "education",
