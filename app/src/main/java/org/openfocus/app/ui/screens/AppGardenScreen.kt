@@ -161,8 +161,15 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                         }
                         Button(
                             onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                            enabled = disclosureAccepted,
                             modifier = Modifier.fillMaxWidth()
-                        ) { Text(if (serviceEnabled) "Review Accessibility settings" else "Open Accessibility settings") }
+                        ) {
+                            Text(when {
+                                !disclosureAccepted -> "Accept the disclosure below first"
+                                serviceEnabled -> "Review Accessibility settings"
+                                else -> "Open Accessibility settings"
+                            })
+                        }
                     }
                 }
 
