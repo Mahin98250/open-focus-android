@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,10 +14,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,6 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -58,9 +63,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
             store.reset(preferred * 60_000L)
             onboarding.edit().putBoolean("focus_duration_initialized", true).apply()
             store.load()
-        } else {
-            saved
-        }
+        } else saved
     }
     var snapshot by remember { mutableStateOf(initialSnapshot) }
     var remaining by remember { mutableStateOf(snapshot.remainingMillis) }
@@ -73,14 +76,10 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
             delay(1_000L)
             snapshot = store.load()
             remaining = snapshot.remainingMillis
-            if (snapshot.isCompleted && store.takeCompletionNotification()) {
-                FocusCompletionNotification.show(context)
-            }
+            if (snapshot.isCompleted && store.takeCompletionNotification()) FocusCompletionNotification.show(context)
         }
         remaining = snapshot.remainingMillis
-        if (snapshot.isCompleted && store.takeCompletionNotification()) {
-            FocusCompletionNotification.show(context)
-        }
+        if (snapshot.isCompleted && store.takeCompletionNotification()) FocusCompletionNotification.show(context)
     }
 
     val totalMillis = snapshot.totalDurationMillis.coerceAtLeast(1L)
@@ -92,54 +91,53 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     val startOrResume: () -> Unit = {
         if (snapshot.isCompleted || snapshot.remainingMillis <= 0L) {
             store.start(durationMillis = selectedMinutes * 60_000L, intention = intention.trim())
-        } else {
-            store.start(intention = intention.trim())
-        }
+        } else store.start(intention = intention.trim())
         snapshot = store.load()
         remaining = snapshot.remainingMillis
     }
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) {
-        // A denied notification permission does not prevent the user from focusing.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         startOrResume()
     }
 
     Column(
-        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
+        modifier = modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("YOUR QUIET CORNER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp)
-            Text("Enter your focus room.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text("One clear intention. A little time. No noise.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text("FOCUS TIMER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.8.sp)
+            Text("Lock in. Tune out.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+            Text("Make a little space for your most important work.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+
+        Box(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF24451F), Color(0xFF111D14), Color(0xFF0B110D))))
+                .padding(vertical = 24.dp, horizontal = 16.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Text(
-                    if (snapshot.isRunning) "YOU'RE IN YOUR FOCUS FLOW" else if (snapshot.isCompleted) "SESSION COMPLETE" else "READY WHEN YOU ARE",
-                    color = MaterialTheme.colorScheme.primary,
+                    if (snapshot.isRunning) "SESSION IN PROGRESS" else if (snapshot.isCompleted) "SESSION COMPLETE" else "READY WHEN YOU ARE",
+                    color = Color(0xFFD5F8B7),
                     style = MaterialTheme.typography.labelSmall,
                     letterSpacing = 1.5.sp
                 )
-                Box(Modifier.size(236.dp), contentAlignment = Alignment.Center) {
-                    Canvas(Modifier.fillMaxWidth().size(236.dp)) {
+                Box(
+                    Modifier.size(252.dp).background(
+                        Brush.radialGradient(listOf(Color(0x553C8A32), Color(0x22264D25), Color.Transparent)),
+                        CircleShape
+                    ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Canvas(Modifier.size(224.dp)) {
                         val strokeWidth = 9.dp.toPx()
-                        drawArc(trackColor, -90f, 360f, false, style = Stroke(strokeWidth, cap = StrokeCap.Round))
+                        drawArc(trackColor.copy(alpha = 0.8f), -90f, 360f, false, style = Stroke(strokeWidth, cap = StrokeCap.Round))
                         drawArc(progressColor, -90f, 360f * progress, false, style = Stroke(strokeWidth, cap = StrokeCap.Round))
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(timeText, style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Light)
-                        Text("FOCUS SESSION", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, letterSpacing = 2.sp)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(timeText, color = Color.White, fontSize = 54.sp, fontWeight = FontWeight.Light, letterSpacing = (-2).sp)
+                        Text("MINUTES LEFT", color = Color(0xFFB7D0B4), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.8.sp)
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -159,6 +157,16 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                         )
                     }
                 }
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                Text("SESSION LENGTH", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = customMinutesText,
@@ -186,16 +194,13 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                             store.pause()
                             snapshot = store.load()
                             remaining = snapshot.remainingMillis
-                        } else if (
-                            Build.VERSION.SDK_INT >= 33 &&
+                        } else if (Build.VERSION.SDK_INT >= 33 &&
                             context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                         ) {
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        } else {
-                            startOrResume()
-                        }
+                        } else startOrResume()
                     }
-                ) { Text(if (snapshot.isRunning) "Pause session" else "Start focus session") }
+                ) { Text(if (snapshot.isRunning) "Pause session" else if (snapshot.isCompleted) "Start again" else "Start focus session") }
                 OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
@@ -206,20 +211,21 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                 ) { Text("Reset timer") }
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text("SET AN INTENTION", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(24.dp)) {
+            Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text("WHAT ARE YOU WORKING ON?", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.1.sp)
                 OutlinedTextField(
                     value = intention,
                     onValueChange = { intention = it.take(120) },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("What deserves your attention?") },
+                    placeholder = { Text("e.g. Revise quadratic equations") },
                     singleLine = true,
                     enabled = !snapshot.isRunning
                 )
                 Text(
                     if (snapshot.isRunning) "Your intention is saved with this session. Pause to edit it before resuming."
-                    else "Your intention is saved with the completed session in local history. Selected apps are redirected during this focus timer or an active schedule when the accessibility service is enabled.",
+                    else "Your intention is saved with the completed session in local history. Selected apps are redirected during this timer when the Accessibility service is enabled.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
