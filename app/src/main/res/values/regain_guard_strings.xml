@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="youtube_guard_description">Open Focus watches the YouTube app on this device to hide entertainment and Shorts while you study. Nothing you see is stored or sent anywhere.</string>
+    <string name="youtube_guard_description">Open Focus uses this to block the distracting apps you choose while a focus session runs, and to hide entertainment and Shorts in YouTube. It only checks which app is open and the YouTube screen text on your device. Nothing is stored or sent anywhere.</string>
 </resources>
