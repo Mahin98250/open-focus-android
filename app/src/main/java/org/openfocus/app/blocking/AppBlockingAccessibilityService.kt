@@ -95,13 +95,13 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         }
 
         if (foregroundPackage == YOUTUBE_PACKAGE && youtubeStudyModeStore.isEnabled()) {
-            val title = inspectCurrentYoutubeTitle()
-            val decision = YoutubeStudyClassifier.classify(title)
-            if (decision != YoutubeContentDecision.EDUCATIONAL) {
+            val inspection = inspectYoutubeScreen()
+            if (inspection.decision != YoutubeContentDecision.EDUCATIONAL) {
                 youtubeStudyOverlay = true
                 lastBlockedPackage = YOUTUBE_PACKAGE
                 lastBlockedAtMillis = System.currentTimeMillis()
-                showBlockerOverlay(YOUTUBE_PACKAGE, dailyLimitReached = false, studyMode = true, detectedTitle = title)
+                showBlockerOverlay(YOUTUBE_PACKAGE, dailyLimitReached = false, studyMode = true,
+                    detectedTitle = inspection.blockedTitle)
                 return
             }
             if (blockerOverlay != null && lastBlockedPackage == YOUTUBE_PACKAGE && youtubeStudyOverlay) {
@@ -243,14 +243,20 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     }
 
 
+    private data class YoutubeScreenInspection(
+        val decision: YoutubeContentDecision,
+        val blockedTitle: String? = null
+    )
+
     /**
-     * Returns a title only when the visible accessibility tree looks like an active
-     * video player. Home feeds, Shorts, search results and unknown layouts are
-     * intentionally treated as unverified and blocked in strict mode.
+     * For a video player, classify its visible title. For feed/search screens,
+     * allow the screen only when every detected video title is clearly educational.
+     * Unknown screens are paused in strict mode.
      */
-    private fun inspectCurrentYoutubeTitle(): String? {
-        val root = runCatching { rootInActiveWindow }.getOrNull() ?: return null
-        val titleCandidates = mutableListOf<Pair<Int, String>>()
+    private fun inspectYoutubeScreen(): YoutubeScreenInspection {
+        val root = runCatching { rootInActiveWindow }.getOrNull()
+            ?: return YoutubeScreenInspection(YoutubeContentDecision.UNCERTAIN)
+        val titles = mutableListOf<Pair<Int, String>>()
         var playerEvidence = false
         var visited = 0
 
@@ -268,17 +274,40 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                 combined.contains("pause video") || combined.contains("play video")) {
                 playerEvidence = true
             }
-            if (text.length in 5..180 && (viewId.contains("video_title") ||
-                    viewId.contains("watch_title") || viewId.endsWith(":id/title") ||
-                    viewId.contains("player_title"))) {
-                titleCandidates.add((if (viewId.contains("video_title") || viewId.contains("watch_title")) 2 else 1) to text)
+            if (text.length in 5..180 && viewId.contains("title")) {
+                val priority = when {
+                    viewId.contains("video_title") || viewId.contains("watch_title") -> 3
+                    viewId.contains("player_title") -> 2
+                    else -> 1
+                }
+                titles.add(priority to text)
             }
             for (index in 0 until node.childCount) visit(node.getChild(index))
         }
 
         visit(root)
-        return titleCandidates.sortedByDescending { it.first }.firstOrNull()?.second
-            ?.takeIf { playerEvidence || titleCandidates.any { item -> item.first == 2 } }
+        val distinctTitles = titles.distinctBy { it.second.lowercase() }
+        if (distinctTitles.isEmpty()) return YoutubeScreenInspection(YoutubeContentDecision.UNCERTAIN)
+
+        if (playerEvidence || distinctTitles.any { it.first >= 2 }) {
+            val currentTitle = distinctTitles.sortedByDescending { it.first }.first().second
+            return YoutubeScreenInspection(
+                YoutubeStudyClassifier.classify(currentTitle),
+                currentTitle.takeIf { YoutubeStudyClassifier.classify(currentTitle) != YoutubeContentDecision.EDUCATIONAL }
+            )
+        }
+
+        val decisions = distinctTitles.map { YoutubeStudyClassifier.classify(it.second) }
+        return when {
+            decisions.all { it == YoutubeContentDecision.EDUCATIONAL } ->
+                YoutubeScreenInspection(YoutubeContentDecision.EDUCATIONAL)
+            decisions.any { it == YoutubeContentDecision.DISTRACTING } ->
+                YoutubeScreenInspection(
+                    YoutubeContentDecision.DISTRACTING,
+                    distinctTitles.firstOrNull { YoutubeStudyClassifier.classify(it.second) == YoutubeContentDecision.DISTRACTING }?.second
+                )
+            else -> YoutubeScreenInspection(YoutubeContentDecision.UNCERTAIN, distinctTitles.first().second)
+        }
     }
 
     private fun removeBlockerOverlay() {
