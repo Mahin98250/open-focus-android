@@ -36,7 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -90,8 +90,9 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
 
     // Package discovery can be slow on devices with many installed apps.
     // Keep it off the main thread so opening the blocker screen stays responsive.
-    val installedApps by produceState<List<LaunchableApp>>(initialValue = emptyList(), key1 = context) {
-        val discoveredApps = withContext(Dispatchers.IO) {
+    var installedApps by remember(context) { mutableStateOf<List<LaunchableApp>>(emptyList()) }
+    LaunchedEffect(context) {
+        installedApps = withContext(Dispatchers.IO) {
             val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             @Suppress("DEPRECATION")
             context.packageManager.queryIntentActivities(launcherIntent, 0)
@@ -103,7 +104,6 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                 .distinctBy { it.packageName }
                 .sortedBy { it.label.lowercase() }
         }
-        value = discoveredApps
     }
 
     val filteredApps = remember(installedApps, searchQuery, showSelectedOnly, blockedPackages) {
@@ -533,12 +533,11 @@ private fun InstalledAppIcon(packageName: String, label: String) {
     val context = LocalContext.current
     // Resolving and rasterising package icons on the UI thread creates visible
     // stutters while scrolling. Load each icon asynchronously and cache its state.
-    val icon by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null,
-        key1 = context,
-        key2 = packageName
-    ) {
-        val loaded = withContext(Dispatchers.IO) {
+    var icon by remember(context, packageName) {
+        mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
+    }
+    LaunchedEffect(context, packageName) {
+        icon = withContext(Dispatchers.IO) {
             runCatching {
                 val drawable = context.packageManager.getApplicationIcon(packageName)
                 val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
@@ -548,7 +547,6 @@ private fun InstalledAppIcon(packageName: String, label: String) {
                 bitmap.asImageBitmap()
             }.getOrNull()
         }
-        value = loaded
     }
     val loadedIcon = icon
     if (loadedIcon != null) {
