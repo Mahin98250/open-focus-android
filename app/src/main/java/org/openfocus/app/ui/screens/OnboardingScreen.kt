@@ -143,20 +143,22 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     LaunchedEffect(context) {
         isScanningApps = true
         scannedApps = withContext(Dispatchers.IO) {
-            val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-            @Suppress("DEPRECATION")
-            context.packageManager.queryIntentActivities(launchIntent, 0)
-                .mapNotNull { result ->
-                    val packageName = result.activityInfo?.packageName ?: return@mapNotNull null
-                    if (packageName == context.packageName) return@mapNotNull null
-                    val label = result.loadLabel(context.packageManager).toString()
-                    val normalized = (label + " " + packageName).lowercase(Locale.ROOT)
-                    val suggested = packageName in suggestedPackages ||
-                        distractionWords.any { word -> normalized.contains(word) }
-                    ScannedApp(packageName, label, suggested)
-                }
-                .distinctBy { it.packageName }
-                .sortedWith(compareByDescending<ScannedApp> { it.suggested }.thenBy { it.label.lowercase(Locale.ROOT) })
+            runCatching {
+                val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(launchIntent, 0)
+                    .mapNotNull { result ->
+                        val packageName = result.activityInfo?.packageName ?: return@mapNotNull null
+                        if (packageName == context.packageName) return@mapNotNull null
+                        val label = result.loadLabel(context.packageManager).toString()
+                        val normalized = (label + " " + packageName).lowercase(Locale.ROOT)
+                        val suggested = packageName in suggestedPackages ||
+                            distractionWords.any { word -> normalized.contains(word) }
+                        ScannedApp(packageName, label, suggested)
+                    }
+                    .distinctBy { it.packageName }
+                    .sortedWith(compareByDescending<ScannedApp> { it.suggested }.thenBy { it.label.lowercase(Locale.ROOT) })
+            }.getOrDefault(emptyList())
         }
         isScanningApps = false
     }
