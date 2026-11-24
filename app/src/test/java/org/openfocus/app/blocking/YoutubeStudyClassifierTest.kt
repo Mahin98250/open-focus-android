@@ -18,6 +18,14 @@ class YoutubeStudyClassifierTest {
             YoutubeContentDecision.EDUCATIONAL,
             YoutubeStudyClassifier.classify("How to build discipline and stay motivated")
         )
+        assertEquals(
+            YoutubeContentDecision.EDUCATIONAL,
+            YoutubeStudyClassifier.classify("Never Give Up - An Inspirational Speech")
+        )
+        assertEquals(
+            YoutubeContentDecision.EDUCATIONAL,
+            YoutubeStudyClassifier.classify("CBSE Class 10 NCERT important questions")
+        )
     }
 
     @Test
