@@ -25,7 +25,8 @@ The web preview is a product-design review surface. It cannot validate Android s
 | Capability | Status | Android constraints / acceptance |
 |---|---|---|
 | Select installed launcher apps | In progress | Current picker queries launcher activities; verify device visibility and special app cases |
-| Block selected apps during a focus timer or active weekly schedule | In progress | AccessibilityService reads package identifiers only and presents an overlay when a focus session or recurring local schedule is active; test real devices, process death, OEM differences and user disablement |
+| Block selected apps during a focus timer or active weekly schedule | In progress | AccessibilityService reads foreground package identifiers and presents an overlay when a focus session or recurring local schedule is active; test real devices, process death, OEM differences and user disablement |
+| YouTube Study Mode | In progress | Opt-in on-device title classification allows clearly educational/motivational videos and blocks known entertainment or unknown screens; verify YouTube view IDs, feed/search results, video navigation and false positives across real devices |
 | Recurring weekly schedules | In progress | Local weekday/time evaluator supports overnight windows; test reboot, local time changes, overlapping schedules and boundaries. Daily limits remain planned |
 | Strict sessions | Planned | Describe what can and cannot be enforced; never claim impossible-to-bypass protection |
 | Usage analytics | In progress | User-granted Usage Access returns local foreground-time aggregates for the last 24 hours; historical reports and limits remain planned |
