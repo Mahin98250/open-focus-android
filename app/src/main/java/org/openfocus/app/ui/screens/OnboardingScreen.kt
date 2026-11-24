@@ -231,7 +231,110 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     label = "onboarding-step"
                 ) { currentPage ->
                     when (currentPage) {
-                        0, 1, 2 -> {
+                        0 -> {
+                            Column(
+                                Modifier.fillMaxWidth().padding(top = 4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(18.dp)
+                            ) {
+                                Box(
+                                    Modifier.fillMaxWidth().height(292.dp)
+                                        .background(
+                                            Brush.linearGradient(
+                                                listOf(Color(0xFF183F28), Color(0xFF10271B), Color(0xFF0B1510))
+                                            ),
+                                            androidx.compose.foundation.shape.RoundedCornerShape(30.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        Modifier.size(250.dp).scale(pulse)
+                                            .background(
+                                                Brush.radialGradient(
+                                                    listOf(Color(0xFFB7F36B).copy(alpha = 0.20f), Color.Transparent)
+                                                ),
+                                                CircleShape
+                                            )
+                                    )
+                                    Surface(
+                                        Modifier.size(184.dp).rotate(rotation),
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(42.dp),
+                                        color = Color(0xFF203B28),
+                                        shadowElevation = 18.dp
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                                Text("FOCUS", color = Color(0xFFB7F36B), fontSize = 12.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+                                                Text("25:00", color = Color.White, fontSize = 43.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-2).sp)
+                                                Text("ONE THING AT A TIME", color = Color(0xFFB8C8B8), fontSize = 8.sp, letterSpacing = 1.2.sp)
+                                            }
+                                        }
+                                    }
+                                    Surface(
+                                        Modifier.align(Alignment.TopStart).padding(start = 18.dp, top = 25.dp),
+                                        shape = CircleShape,
+                                        color = Color(0xFF2A5033)
+                                    ) {
+                                        Text("✦  DEEP WORK", Modifier.padding(horizontal = 13.dp, vertical = 8.dp), color = Color(0xFFDDF5C9), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                    Surface(
+                                        Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 26.dp),
+                                        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+                                        color = Color(0xFF263E2B)
+                                    ) {
+                                        Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                            Text("✓", color = Color(0xFFB7F36B), fontWeight = FontWeight.Bold)
+                                            Text("Distractions paused", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                    }
+                                    Text("✧", Modifier.align(Alignment.TopEnd).padding(end = 37.dp, top = 44.dp), color = Color(0xFFB7F36B), fontSize = 29.sp)
+                                    Text("✦", Modifier.align(Alignment.BottomStart).padding(start = 34.dp, bottom = 45.dp), color = Color(0xFFB7F36B), fontSize = 21.sp)
+                                }
+                                Text(
+                                    "YOUR FOCUS STARTS HERE",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    letterSpacing = 2.1.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    "Make time for\nwhat matters.",
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 39.sp,
+                                    letterSpacing = (-1.1).sp
+                                )
+                                Text(
+                                    "Study with intention, pause the apps that pull you away, and build a routine you can actually stick to.",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                                ) {
+                                    listOf("Focus timer", "App blocking", "Study goals").forEach { feature ->
+                                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
+                                            Text(feature, Modifier.padding(horizontal = 10.dp, vertical = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                    }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                    repeat(3) { index ->
+                                        Box(
+                                            Modifier.size(if (index == 0) 20.dp else 7.dp, 7.dp)
+                                                .background(
+                                                    if (index == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                                    CircleShape
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        1, 2 -> {
                             val intro = welcomePages[currentPage]
                             Column(
                                 Modifier.fillMaxWidth().padding(top = 12.dp),
