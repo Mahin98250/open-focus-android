@@ -31,7 +31,7 @@ The web preview is a product-design review surface. It cannot validate Android s
 | Strict sessions | Planned | Describe what can and cannot be enforced; never claim impossible-to-bypass protection |
 | Usage analytics | In progress | User-granted Usage Access returns local foreground-time aggregates for the last 24 hours; historical reports and limits remain planned |
 | Website filtering | Planned | A local Android VPN service requires explicit system consent; explain conflicts and local-only processing |
-| Reels / Shorts / feed controls | Planned | Blocking the host app is feasible; granular in-app feed blocking is not guaranteed across third-party apps |
+| Reels / Shorts / feed controls | In progress | Quick controls now pause supported social apps (Instagram, TikTok, YouTube and Snapchat) during active focus sessions/schedules; granular in-app feed blocking is not guaranteed across third-party apps |
 | Focus completion notification | In progress | Android 13+ notification permission requested in context; inexact alarm may be delayed; verify denied permission, Doze, reboot and OEM battery policies |
 
 ## Privacy, quality and release
