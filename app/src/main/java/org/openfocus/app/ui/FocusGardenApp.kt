@@ -171,7 +171,11 @@ fun FocusGardenApp() {
             "schedules" -> ScheduleScreen(Modifier.padding(innerPadding)) { currentRoute = "apps" }
             "insights" -> InsightsScreen(Modifier.padding(innerPadding)) { currentRoute = "home" }
             "growth" -> GrowthScreen(Modifier.padding(innerPadding)) { currentRoute = "home" }
-            "groups" -> FocusTogetherScreen(Modifier.padding(innerPadding)) { currentRoute = "focus" }
+            "groups" -> FocusTogetherScreen(Modifier.padding(innerPadding)) { focusIntention ->
+                context.getSharedPreferences("focus_ui_settings", Context.MODE_PRIVATE)
+                    .edit().putString("next_focus_intention", focusIntention).apply()
+                currentRoute = "focus"
+            }
             "settings" -> SettingsScreen(Modifier.padding(innerPadding))
             else -> OverviewScreen(Modifier.padding(innerPadding)) { currentRoute = it }
         }
