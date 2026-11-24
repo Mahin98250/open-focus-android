@@ -1,6 +1,7 @@
 package org.openfocus.app.ui.screens
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -40,6 +41,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +73,14 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     var selectedMinutes by remember { mutableIntStateOf((snapshot.totalDurationMillis / 60_000L).toInt()) }
     var customMinutesText by remember { mutableStateOf("") }
     var intention by remember { mutableStateOf(initialSnapshot.intention.orEmpty()) }
+    val focusUiPreferences = remember(context) { context.getSharedPreferences("focus_ui_settings", Context.MODE_PRIVATE) }
+    var selectedTheme by remember { mutableStateOf(focusUiPreferences.getString("focus_theme", "Forest") ?: "Forest") }
+    var pomodoroMode by remember { mutableStateOf(false) }
+    val focusGradient = when (selectedTheme) {
+        "Aurora" -> listOf(Color(0xFF123A42), Color(0xFF101D29), Color(0xFF0B1017))
+        "Midnight" -> listOf(Color(0xFF292347), Color(0xFF17172D), Color(0xFF0B0D16))
+        else -> listOf(Color(0xFF24451F), Color(0xFF111D14), Color(0xFF0B110D))
+    }
 
     LaunchedEffect(snapshot.isRunning, snapshot.endAtEpochMillis) {
         while (snapshot.isRunning) {
@@ -109,10 +120,39 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
             Text("Lock in. Tune out.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
             Text("Make a little space for your most important work.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = !pomodoroMode,
+                onClick = { if (!snapshot.isRunning) pomodoroMode = false },
+                enabled = !snapshot.isRunning,
+                label = { Text("Timer") }
+            )
+            FilterChip(
+                selected = pomodoroMode,
+                onClick = {
+                    if (!snapshot.isRunning) {
+                        pomodoroMode = true
+                        selectedMinutes = 25
+                        store.reset(25 * 60_000L)
+                        snapshot = store.load()
+                        remaining = snapshot.remainingMillis
+                    }
+                },
+                enabled = !snapshot.isRunning,
+                label = { Text("Pomodoro · 25/5") }
+            )
+        }
+        if (pomodoroMode) {
+            Text(
+                "One 25-minute focus round. Plan a 5-minute rest after the round; automatic break cycling is not enabled yet.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
 
         Box(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFF24451F), Color(0xFF111D14), Color(0xFF0B110D))))
+                .background(Brush.linearGradient(focusGradient))
                 .padding(vertical = 24.dp, horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -229,6 +269,39 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
+            }
+        }
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(24.dp)
+        ) {
+            Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("SESSION LOOK", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                Text("Choose your focus atmosphere.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    listOf("Forest", "Aurora", "Midnight").forEach { theme ->
+                        FilterChip(
+                            selected = selectedTheme == theme,
+                            onClick = {
+                                selectedTheme = theme
+                                focusUiPreferences.edit().putString("focus_theme", theme).apply()
+                            },
+                            label = { Text(theme) }
+                        )
+                    }
+                }
+                androidx.compose.material3.Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("♫", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
+                        Column(Modifier.weight(1f).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Ambient sounds", fontWeight = FontWeight.SemiBold)
+                            Text("Audio playback is not connected in this build.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
             }
         }
     }
