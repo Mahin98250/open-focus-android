@@ -382,11 +382,27 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                                 Text(if (youtubeStudyEnabled) "YouTube is restricted to clearly approved topics." else "Turn it on to pause non-study or unverified YouTube screens.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                             }
-                            Switch(checked = youtubeStudyEnabled, enabled = disclosureAccepted, onCheckedChange = { enabled ->
-                                youtubeStudyModeStore.setEnabled(enabled)
-                                youtubeStudyEnabled = enabled
-                            })
+                            Switch(
+                                checked = youtubeStudyEnabled,
+                                enabled = disclosureAccepted && serviceEnabled,
+                                onCheckedChange = { enabled ->
+                                    // Study Mode depends on the running Accessibility service.
+                                    // Never display an enabled state that cannot actually enforce rules.
+                                    youtubeStudyModeStore.setEnabled(enabled)
+                                    youtubeStudyEnabled = enabled
+                                }
+                            )
                         }
+                    }
+                    if (!serviceEnabled || !disclosureAccepted) {
+                        Text(
+                            when {
+                                !disclosureAccepted -> "To turn this on, first accept the privacy note above."
+                                else -> "To turn this on, enable Open Focus Accessibility in the Apps tab and return here."
+                            },
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                     Text("Examples allowed: lessons, CBSE chapters, science, maths, coding, tutorials, productivity and motivation.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
