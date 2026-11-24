@@ -723,6 +723,21 @@ fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: () -> Unit)
                 }
             }
         }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Text("WEEKLY LEADERBOARD", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                Text("Your next challenge starts with consistency.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "No public rankings are shown until shared group sessions exist. Your personal streak and milestones are available in Growth.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
     }
 }
 
