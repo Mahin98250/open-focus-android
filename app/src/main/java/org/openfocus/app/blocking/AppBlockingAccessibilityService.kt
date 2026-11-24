@@ -23,9 +23,9 @@ import org.openfocus.app.blocking.BlockScheduleStore
 /**
  * Optional, explicitly user-enabled app guard.
  *
- * It observes only the foreground package identifier in window-state events. It
- * never requests access to window contents, text, gestures, keystrokes or messages.
- * A touchable accessibility overlay is used instead of starting an Activity from
+ * It observes foreground app changes. When the user explicitly enables YouTube
+ * Study Mode, it inspects visible YouTube titles only; it never reads messages,
+ * keystrokes or other apps' content. A touchable overlay is used instead of starting an Activity from
  * the background, which Android restricts on modern releases.
  */
 class AppBlockingAccessibilityService : AccessibilityService() {
@@ -33,15 +33,27 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     private var blockerOverlay: View? = null
     private var lastBlockedPackage: String? = null
     private var lastBlockedAtMillis: Long = 0L
+    private var youtubeStudyOverlay = false
 
     // Reuse stores on accessibility callbacks and watchdog ticks.
     private val timerStore by lazy { FocusTimerStore(this) }
     private val appBlockStore by lazy { AppBlockStore(this) }
     private val scheduleStore by lazy { BlockScheduleStore(this) }
     private val dailyAppLimitStore by lazy { DailyAppLimitStore(this) }
+    private val youtubeStudyModeStore by lazy { YoutubeStudyModeStore(this) }
 
     private val overlayWatchdog = object : Runnable {
         override fun run() {
+            if (youtubeStudyOverlay) {
+                val activePackage = runCatching { rootInActiveWindow?.packageName?.toString() }.getOrNull()
+                if (activePackage == YOUTUBE_PACKAGE && youtubeStudyModeStore.isEnabled()) {
+                    mainHandler.postDelayed(this, WATCHDOG_INTERVAL_MILLIS)
+                } else {
+                    youtubeStudyOverlay = false
+                    removeBlockerOverlay()
+                }
+                return
+            }
             val focusActive = timerStore.load().isRunning
             if (!focusActive && timerStore.takeCompletionNotification()) {
                 FocusCompletionNotification.show(this@AppBlockingAccessibilityService)
@@ -67,13 +79,36 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        if (event == null) return
         val foregroundPackage = event.packageName?.toString() ?: return
         // Adding/removing TYPE_ACCESSIBILITY_OVERLAY can itself generate a window event
         // attributed to this app. Treating that event as an unblocked app used to
         // remove the blocker immediately, letting the selected game continue opening.
         // Ignore our own overlay/app windows; only evaluate other foreground apps.
         if (foregroundPackage == packageName) return
+
+        if (youtubeStudyOverlay && foregroundPackage != YOUTUBE_PACKAGE) {
+            youtubeStudyOverlay = false
+            removeBlockerOverlay()
+        }
+
+        if (foregroundPackage == YOUTUBE_PACKAGE && youtubeStudyModeStore.isEnabled()) {
+            val title = inspectCurrentYoutubeTitle()
+            val decision = YoutubeStudyClassifier.classify(title)
+            if (decision != YoutubeContentDecision.EDUCATIONAL) {
+                youtubeStudyOverlay = true
+                lastBlockedPackage = YOUTUBE_PACKAGE
+                lastBlockedAtMillis = System.currentTimeMillis()
+                showBlockerOverlay(YOUTUBE_PACKAGE, dailyLimitReached = false, studyMode = true, detectedTitle = title)
+                return
+            }
+            if (blockerOverlay != null && lastBlockedPackage == YOUTUBE_PACKAGE && youtubeStudyOverlay) {
+                youtubeStudyOverlay = false
+                removeBlockerOverlay()
+            }
+        }
+
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val focusActive = timerStore.load().isRunning
         if (!focusActive && timerStore.takeCompletionNotification()) {
@@ -107,7 +142,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         showBlockerOverlay(foregroundPackage, dailyLimitReached)
     }
 
-    private fun showBlockerOverlay(blockedPackage: String, dailyLimitReached: Boolean) {
+    private fun showBlockerOverlay(blockedPackage: String, dailyLimitReached: Boolean, studyMode: Boolean = false, detectedTitle: String? = null) {
         if (blockerOverlay != null) return
 
         val appLabel = runCatching {
@@ -142,7 +177,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             gravity = Gravity.CENTER
         }
         val heading = TextView(this).apply {
-            text = "A little pause."
+            text = if (studyMode) "Back to learning." else "A little pause."
             textSize = 28f
             typeface = Typeface.create("sans-serif", Typeface.BOLD)
             setTextColor(Color.WHITE)
@@ -150,7 +185,13 @@ class AppBlockingAccessibilityService : AccessibilityService() {
             setPadding(0, dp(12), 0, dp(10))
         }
         val message = TextView(this).apply {
-            text = if (dailyLimitReached) {
+            text = if (studyMode) {
+                if (detectedTitle.isNullOrBlank()) {
+                    "YouTube is in Study Mode. Only clearly educational or motivational videos are allowed. This screen could not be verified, so it is paused."
+                } else {
+                    "“" + detectedTitle.take(100) + "” does not match your study-only rules. Choose a lesson, tutorial or motivational video instead."
+                }
+            } else if (dailyLimitReached) {
                 "You have reached today's app limit for " + appLabel + ". Your limit resets at local midnight."
             } else {
                 appLabel + " is on your pause list right now. Take a breath, then choose what you want to do next."
@@ -197,6 +238,45 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         }
     }
 
+
+    /**
+     * Returns a title only when the visible accessibility tree looks like an active
+     * video player. Home feeds, Shorts, search results and unknown layouts are
+     * intentionally treated as unverified and blocked in strict mode.
+     */
+    private fun inspectCurrentYoutubeTitle(): String? {
+        val root = runCatching { rootInActiveWindow }.getOrNull() ?: return null
+        val titleCandidates = mutableListOf<Pair<Int, String>>()
+        var playerEvidence = false
+        var visited = 0
+
+        fun visit(node: android.view.accessibility.AccessibilityNodeInfo?) {
+            if (node == null || visited >= MAX_ACCESSIBILITY_NODES) return
+            visited += 1
+            val viewId = runCatching { node.viewIdResourceName.orEmpty().lowercase() }.getOrDefault("")
+            val className = node.className?.toString().orEmpty()
+            val text = node.text?.toString()?.trim().orEmpty()
+            val description = node.contentDescription?.toString()?.trim().orEmpty()
+            val combined = "$text $description".lowercase()
+
+            if (viewId.contains("player") || viewId.contains("watch") ||
+                className.contains("PlayerView", ignoreCase = true) ||
+                combined.contains("pause video") || combined.contains("play video")) {
+                playerEvidence = true
+            }
+            if (text.length in 5..180 && (viewId.contains("video_title") ||
+                    viewId.contains("watch_title") || viewId.endsWith(":id/title") ||
+                    viewId.contains("player_title"))) {
+                titleCandidates.add((if (viewId.contains("video_title") || viewId.contains("watch_title")) 2 else 1) to text)
+            }
+            for (index in 0 until node.childCount) visit(node.getChild(index))
+        }
+
+        visit(root)
+        return titleCandidates.sortedByDescending { it.first }.firstOrNull()?.second
+            ?.takeIf { playerEvidence || titleCandidates.any { item -> item.first == 2 } }
+    }
+
     private fun removeBlockerOverlay() {
         mainHandler.removeCallbacks(overlayWatchdog)
         val view = blockerOverlay ?: return
@@ -235,6 +315,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     }
 
     companion object {
+        private const val YOUTUBE_PACKAGE = "com.google.android.youtube"
+        private const val MAX_ACCESSIBILITY_NODES = 350
         private const val REPEAT_GUARD_MILLIS = 2_000L
         private const val WATCHDOG_INTERVAL_MILLIS = 1_000L
     }
