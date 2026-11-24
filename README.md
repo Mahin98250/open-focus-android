@@ -4,6 +4,12 @@ An independent, fully open-source Android digital-wellbeing and focus app. The g
 
 > **Status:** Early development. The first native multi-screen experience, persisted focus timer, local app selection/blocking foundation and local study-task planner are now in the repository. This is not yet a complete Regain alternative and has not yet passed real-device verification.
 
+## Live web preview
+
+**[Open Focus — GitHub Pages preview](https://mahin98250.github.io/open-focus-android/)**
+
+This is the browser-based product preview published from the `site/` directory. It demonstrates the intended interface and browser-only interactions; it is separate from the native Android application and does not provide real Android app blocking or Android background functionality. The preview is automatically redeployed by the GitHub Pages workflow when relevant files in `site/` change on `main`.
+
 ## Product goal
 
 We are targeting broad feature parity in user value and workflows with the focus, distraction-control and digital-wellbeing capabilities people expect from Regain, while maintaining a different identity and an independent implementation. This is a full product, not just a Pomodoro timer.
