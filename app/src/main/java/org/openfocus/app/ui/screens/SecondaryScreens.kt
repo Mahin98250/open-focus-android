@@ -55,41 +55,86 @@ fun PlannerScreen(modifier: Modifier = Modifier) {
     val store = remember { PlannerStore(context) }
     val tasks = remember { mutableStateListOf<PlannerTask>().apply { addAll(store.load()) } }
     var draft by remember { mutableStateOf("") }
+    val completed = tasks.count { it.completed }
+    val progress = if (tasks.isEmpty()) 0f else completed.toFloat() / tasks.size
 
-    Column(modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text("TURN INTENTIONS INTO ACTION", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-            Text("A plan that breathes.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Text("Keep your next steps clear, kind and achievable.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("STUDY PLANNER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.6.sp)
+            Text("Plan your day.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+            Text("Turn your next study goals into small, clear steps.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("TODAY'S CHECKLIST", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                        Text("$completed of ${tasks.size} complete", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    }
+                    Text("${(progress * 100).toInt()}%", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                }
+                androidx.compose.material3.LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.45f)
+                )
+                Text(
+                    if (tasks.isEmpty()) "Add your first task to begin building a plan."
+                    else if (completed == tasks.size) "Everything on your list is complete. Nice work."
+                    else "One task at a time. Keep the next step achievable.",
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
             Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("YOUR TASKS", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                Text("ADD A STUDY TASK", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.1.sp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = draft,
-                        onValueChange = { draft = it },
+                        onValueChange = { draft = it.take(100) },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Add a small next step") },
+                        placeholder = { Text("e.g. Revise chemical reactions") },
                         singleLine = true
                     )
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = {
-                        val title = draft.trim()
-                        if (title.isNotEmpty()) {
-                            tasks.add(store.add(title))
-                            draft = ""
+                    Button(
+                        enabled = draft.isNotBlank(),
+                        onClick = {
+                            val title = draft.trim()
+                            if (title.isNotEmpty()) {
+                                tasks.add(store.add(title))
+                                draft = ""
+                            }
                         }
-                    }) { Text("Add") }
+                    ) { Text("Add") }
                 }
-                Text(tasks.count { it.completed }.toString() + " of " + tasks.size + " complete", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
         }
-        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("YOUR TASKS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+            Text("${tasks.size} total", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+        }
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(tasks, key = { it.id }) { task ->
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(17.dp)
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 11.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
@@ -100,12 +145,14 @@ fun PlannerScreen(modifier: Modifier = Modifier) {
                                 if (index >= 0) tasks[index] = task.copy(completed = checked)
                             }
                         )
-                        Text(
-                            task.title,
-                            modifier = Modifier.weight(1f),
-                            fontWeight = FontWeight.Medium,
-                            color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                        )
+                        Column(Modifier.weight(1f).padding(start = 5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                task.title,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(if (task.completed) "Completed" else "Ready when you are", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+                        }
                         TextButton(onClick = {
                             store.delete(task.id)
                             tasks.removeAll { it.id == task.id }
@@ -114,7 +161,15 @@ fun PlannerScreen(modifier: Modifier = Modifier) {
                 }
             }
             if (tasks.isEmpty()) {
-                item { Text("Your list is clear. Add one small task to begin.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Text("☷", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineLarge)
+                            Text("Your plan starts here", fontWeight = FontWeight.Bold)
+                            Text("Add one small task. You can tick it off when it is done.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
             }
         }
     }
@@ -153,14 +208,33 @@ fun ScheduleScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         TextButton(onClick = onBack) { Text("← App blocking") }
-        Text("MAKE SPACE AUTOMATIC", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-        Text("Find your rhythm.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text("SCHEDULE PLANNER", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+        Text("Plan your studies.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
         Text(
-            "Choose the days and hours when your selected apps should take a pause. Schedules use your phone's local time.",
+            "Set focus windows for your week. Your selected apps pause automatically during these times.",
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(23.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("BUILD A CONSISTENT ROUTINE", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                Text("Protect time for the things that matter.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Choose a preset or create your own repeating schedule.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            FilterChip(selected = name == "Morning Study", onClick = { name = "Morning Study"; startTime = "06:00"; endTime = "08:00" }, label = { Text("Morning") })
+            FilterChip(selected = name == "Afternoon Study", onClick = { name = "Afternoon Study"; startTime = "14:00"; endTime = "16:00" }, label = { Text("Afternoon") })
+            FilterChip(selected = name == "Evening Study", onClick = { name = "Evening Study"; startTime = "18:00"; endTime = "20:00" }, label = { Text("Evening") })
+        }
 
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Card(
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
             Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("CREATE A FOCUS WINDOW", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 OutlinedTextField(
@@ -218,7 +292,10 @@ fun ScheduleScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
             }
         }
 
-        Text("YOUR SCHEDULES · ${schedules.size}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("YOUR SCHEDULES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+            Text("${schedules.size} saved", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
+        }
         if (schedules.isEmpty()) {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Text(
@@ -305,9 +382,7 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
     val disclosurePreferences = remember(context) {
         context.getSharedPreferences("usage_access_disclosure", android.content.Context.MODE_PRIVATE)
     }
-    var disclosureAccepted by remember {
-        mutableStateOf(disclosurePreferences.getBoolean("accepted", false))
-    }
+    var disclosureAccepted by remember { mutableStateOf(disclosurePreferences.getBoolean("accepted", false)) }
     var usageAccessGranted by remember { mutableStateOf(usageRepository.hasUsageAccess()) }
     var usageSummary by remember { mutableStateOf(usageRepository.loadLast24Hours()) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -325,35 +400,78 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    val weekStart = remember {
-        Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -7) }.timeInMillis
-    }
+    val weekStart = remember { Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -7) }.timeInMillis }
     val weekSessions = sessions.filter { it.completedAtEpochMillis >= weekStart }
     val weekFocusMillis = weekSessions.sumOf { it.durationMillis }
     val allFocusMillis = sessions.sumOf { it.durationMillis }
-
-    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        TextButton(onClick = onBack) { Text("← Overview") }
-        Text("NOTICE YOUR PROGRESS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-        Text("Your attention, in bloom.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-            InsightMetric("LAST 7 DAYS", formatInsightDuration(weekFocusMillis), Modifier.weight(1f))
-            InsightMetric("SESSIONS", weekSessions.size.toString(), Modifier.weight(1f))
+    val dayBars = (6 downTo 0).map { offset ->
+        val start = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, -offset)
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("ALL-TIME FOCUS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                Text(formatInsightDuration(allFocusMillis), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text(sessions.size.toString() + " completed sessions saved locally", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val from = start.timeInMillis
+        val untilTime = Calendar.getInstance().apply { timeInMillis = from; add(Calendar.DAY_OF_YEAR, 1) }.timeInMillis
+        val duration = sessions.filter { it.completedAtEpochMillis >= from && it.completedAtEpochMillis < untilTime }.sumOf { it.durationMillis }
+        val label = DateFormat.getDateInstance(DateFormat.SHORT).format(from)
+        Triple(label, duration, from)
+    }
+    val maxDayFocus = dayBars.maxOfOrNull { it.second }?.coerceAtLeast(1L) ?: 1L
+
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        TextButton(onClick = onBack) { Text("← Home") }
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text("SCREEN TIME & FOCUS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+            Text("Know where your time goes.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+            Text("A clear view of your focus sessions and Android-reported app usage.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("LAST 7 DAYS · FOCUS TIME", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                Text(formatInsightDuration(weekFocusMillis), color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text("${weekSessions.size} completed sessions", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodySmall)
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("DEVICE APP USAGE · LAST 24 HOURS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            InsightMetric("ALL-TIME FOCUS", formatInsightDuration(allFocusMillis), Modifier.weight(1f))
+            InsightMetric("TOTAL SESSIONS", sessions.size.toString(), Modifier.weight(1f))
+        }
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+        ) {
+            Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                Text("DAILY FOCUS TREND", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                dayBars.forEach { (label, duration, _) ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(formatInsightDuration(duration), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        }
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = (duration.toFloat() / maxDayFocus).coerceIn(0f, 1f),
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    }
+                }
+                if (sessions.isEmpty()) Text("Complete a focus session to start building your trend.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+        ) {
+            Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("DEVICE APP USAGE · LAST 24 HOURS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
                 if (!usageAccessGranted) {
                     Text("See how much time your apps use.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(
-                        "Android keeps this data behind a special Usage Access setting. When enabled, this app reads the system's foreground-time totals and last-used times, calculates the summary on this device and does not upload it.",
+                        "Android protects this information behind Usage Access. When enabled, Open Focus reads aggregate foreground-time totals and calculates the breakdown on this phone. It does not upload the data.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -365,44 +483,36 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
                                 disclosurePreferences.edit().putBoolean("accepted", it).apply()
                             }
                         )
-                        Text(
-                            "I understand what app-usage information this feature reads and how it is used.",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text("I understand what app-usage information this feature reads.", style = MaterialTheme.typography.bodySmall)
                     }
                     Button(
                         enabled = disclosureAccepted,
-                        onClick = {
-                            runCatching {
-                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                            }
-                        }
+                        onClick = { runCatching { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) } },
+                        modifier = Modifier.fillMaxWidth()
                     ) { Text("Open Usage Access settings") }
                 } else if (usageSummary == null) {
-                    Text(
-                        "Usage Access is enabled, but Android has not returned any usage records for this period yet.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Text("Usage Access is enabled, but Android has not returned records for this period yet.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                     TextButton(onClick = { refreshUsage() }) { Text("Refresh usage data") }
                 } else {
                     val summary = usageSummary!!
                     Text(formatInsightDuration(summary.totalForegroundMillis), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     Text("Foreground time reported by Android", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    val maxAppTime = summary.apps.maxOfOrNull { it.foregroundMillis }?.coerceAtLeast(1L) ?: 1L
                     if (summary.apps.isEmpty()) {
                         Text("No app usage has been reported in the last 24 hours.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         summary.apps.take(8).forEach { app ->
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(app.displayName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                                    Text(app.packageName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Text(app.displayName, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                                    Text(formatInsightDuration(app.foregroundMillis), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
                                 }
-                                Text(formatInsightDuration(app.foregroundMillis), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                                androidx.compose.material3.LinearProgressIndicator(
+                                    progress = (app.foregroundMillis.toFloat() / maxAppTime).coerceIn(0f, 1f),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                )
                             }
                         }
                     }
@@ -410,19 +520,20 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
                 }
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("RECENT FOCUS SESSIONS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+        ) {
+            Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("RECENT FOCUS SESSIONS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
                 if (sessions.isEmpty()) {
                     Text("Your first completed focus session will appear here.", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     sessions.takeLast(8).asReversed().forEach { session ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(session.completedAtEpochMillis), style = MaterialTheme.typography.bodySmall)
-                                session.intention?.let {
-                                    Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall)
-                                }
+                                session.intention?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall) }
                             }
                             Text(formatInsightDuration(session.durationMillis), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
                         }
@@ -431,7 +542,7 @@ fun InsightsScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
             }
         }
         Text(
-            "Focus history comes from sessions completed in this app. Device usage comes from Android's Usage Access API and stays local. These are different measurements.",
+            "Focus history comes from sessions completed in Open Focus. Device app usage comes from Android's Usage Access API. These are different measurements and both stay local.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall
         )
@@ -494,7 +605,7 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
             InsightMetric("SESSIONS", stats.totalSessions.toString(), Modifier.weight(1f))
             InsightMetric("FOCUS TIME", "${stats.totalFocusHours}h", Modifier.weight(1f))
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("LAST 7 DAYS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 if (stats.lastSevenDays.all { it.focusMillis == 0L }) {
@@ -517,7 +628,7 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
                 }
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 Text("NEXT MILESTONES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 Text("Sessions · ${stats.totalSessions} / $nextSessionMilestone", fontWeight = FontWeight.SemiBold)
@@ -533,7 +644,7 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
                 Text("Milestones unlock from real completed sessions. Paused or abandoned timers do not count.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("ACHIEVEMENTS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 val achievements = listOf(
@@ -560,6 +671,61 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
 }
 
 @Composable
+fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: () -> Unit) {
+    var roomName by remember { mutableStateOf("Study session") }
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text("FOCUS WITH OTHERS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
+        Text("Better together.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+        Text("A place for shared study sessions and accountability.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("YOUR FOCUS ROOM", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                Text("Create a quiet study space.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                OutlinedTextField(
+                    value = roomName,
+                    onValueChange = { roomName = it.take(40) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Session name") }
+                )
+                Button(onClick = onStartFocus, modifier = Modifier.fillMaxWidth()) { Text("Start my focus session") }
+            }
+        }
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("LIVE GROUPS & LEADERBOARDS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                Text("Multiplayer is not connected yet.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Live rooms, member activity and global rankings need a shared online service. Open Focus is currently offline-first and does not create fake participants, scores or live room counts.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                androidx.compose.material3.Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+                ) {
+                    Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("◎", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineSmall)
+                        Column(Modifier.weight(1f).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Local focus is ready", fontWeight = FontWeight.SemiBold)
+                            Text("Your timer, history and streaks work without an account.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val onboardingPreferences = remember {
@@ -572,10 +738,11 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     }
     var goalSaved by remember { mutableStateOf(false) }
 
-    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("YOUR APP, YOUR RULES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-        Text("Make it yours.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
+    Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text("SETTINGS & PREFERENCES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
+        Text("Make it yours.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+        Text("Personalise your daily target and review how Open Focus protects your data.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("DAILY STUDY TARGET", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
                 Text(
@@ -603,14 +770,14 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 ) { Text(if (goalSaved) "Target saved" else "Save daily target") }
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("PRIVACY PROMISE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 Text("Local-first. No ads. No account required.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Text("Your selected app package names, timer state and tasks are stored on this device. No analytics or advertising SDKs are included.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("ABOUT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 Text("Open Focus", fontWeight = FontWeight.SemiBold)
