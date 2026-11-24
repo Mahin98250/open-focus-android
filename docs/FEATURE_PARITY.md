@@ -10,7 +10,7 @@ The web preview is a product-design review surface. It cannot validate Android s
 
 | Screen | Intended experience | Status | Acceptance evidence |
 |---|---|---|---|
-| Welcome / onboarding | Animated multi-step introduction; daily study goal, estimated screen time, focus-session preference, personal priorities, installed-app distraction scan and setup summary | In progress | Verify launcher app visibility, suggested-app matching, persisted selections, goal handoff, small/large screens, reduced motion and first-run/resume behaviour |
+| Welcome / onboarding | Animated multi-step introduction; daily study goal, estimated screen time, focus-session preference, personal priorities, installed-app distraction scan (background thread) and setup summary | In progress | Verify launcher app visibility, suggested-app matching, persisted selections, goal handoff, small/large screens, reduced motion and first-run/resume behaviour |
 | Overview | Dashboard, focus CTA, personalised study goal, daily summary, next tasks and progress | In progress | Verify onboarding goal/priority handoff, real data, loading/empty/error states, responsive UI and accessibility tests |
 | Focus room | Pomodoro, configurable durations, breaks, intention and session controls | In progress | Timer unit tests; lifecycle, process death, reboot and notification tests |
 | App garden | Installed-app picker, selected packages, permission disclosure and block controls | In progress | App visibility, affirmative disclosure, service enable/disable, overlay and manufacturer tests |
@@ -28,7 +28,7 @@ The web preview is a product-design review surface. It cannot validate Android s
 | Block selected apps during a focus timer or active weekly schedule | In progress | AccessibilityService reads foreground package identifiers and presents an overlay when a focus session or recurring local schedule is active; test real devices, process death, OEM differences and user disablement |
 | YouTube Study Mode | In progress | Opt-in on-device title classification allows clearly educational/motivational videos and blocks known entertainment or unknown screens; verify YouTube view IDs, feed/search results, video navigation and false positives across real devices |
 | Recurring weekly schedules | In progress | Local weekday/time evaluator supports overnight windows; test reboot, local time changes, overlapping schedules and boundaries. Daily limits remain planned |
-| Strict sessions | Planned | Describe what can and cannot be enforced; never claim impossible-to-bypass protection |
+| Strict sessions | In progress | Strict mode disables in-app pause/reset until the timer finishes; it cannot prevent force-stop, app-data clearing, permission removal or device restart |
 | Usage analytics | In progress | User-granted Usage Access returns local foreground-time aggregates for the last 24 hours; historical reports and limits remain planned |
 | Website filtering | Planned | A local Android VPN service requires explicit system consent; explain conflicts and local-only processing |
 | Reels / Shorts / feed controls | In progress | Quick controls now pause supported social apps (Instagram, TikTok, YouTube and Snapchat) during active focus sessions/schedules; granular in-app feed blocking is not guaranteed across third-party apps |
