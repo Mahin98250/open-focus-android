@@ -548,9 +548,10 @@ private fun InstalledAppIcon(packageName: String, label: String) {
             }.getOrNull()
         }
     }
-    if (icon != null) {
+    val loadedIcon = icon
+    if (loadedIcon != null) {
         Image(
-            bitmap = icon,
+            bitmap = loadedIcon,
             contentDescription = "$label app icon",
             modifier = Modifier.size(44.dp),
             contentScale = ContentScale.Fit
