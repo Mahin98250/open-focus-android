@@ -344,8 +344,19 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                         style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                     Text("Keep the lessons. Leave the rabbit holes.",
                         style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text("When enabled, Open Focus checks the visible title of the active YouTube video. Clear study, educational and motivational titles can continue. Entertainment, Shorts, feeds and uncertain screens are paused.",
+                    Text("When enabled, Open Focus checks visible YouTube video titles. Clear study, educational and motivational titles can continue. Entertainment and uncertain screens are paused.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = disclosureAccepted,
+                            onCheckedChange = { accepted ->
+                                disclosureAccepted = accepted
+                                disclosurePreferences.edit().putBoolean("accessibility_disclosure_accepted", accepted).apply()
+                            }
+                        )
+                        Text("I understand that Study Mode reads visible YouTube video titles to apply my rules. It does not read messages or keystrokes.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)) {
                         Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -355,7 +366,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                                 Text(if (youtubeStudyEnabled) "YouTube is restricted to clearly approved topics." else "Turn it on to pause non-study or unverified YouTube screens.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                             }
-                            Switch(checked = youtubeStudyEnabled, onCheckedChange = { enabled ->
+                            Switch(checked = youtubeStudyEnabled, enabled = disclosureAccepted, onCheckedChange = { enabled ->
                                 youtubeStudyModeStore.setEnabled(enabled)
                                 youtubeStudyEnabled = enabled
                             })
