@@ -91,7 +91,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     // Package discovery can be slow on devices with many installed apps.
     // Keep it off the main thread so opening the blocker screen stays responsive.
     val installedApps by produceState<List<LaunchableApp>>(initialValue = emptyList(), key1 = context) {
-        value = withContext(Dispatchers.IO) {
+        val discoveredApps = withContext(Dispatchers.IO) {
             val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             @Suppress("DEPRECATION")
             context.packageManager.queryIntentActivities(launcherIntent, 0)
@@ -103,6 +103,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                 .distinctBy { it.packageName }
                 .sortedBy { it.label.lowercase() }
         }
+        value = discoveredApps
     }
 
     val filteredApps = remember(installedApps, searchQuery, showSelectedOnly, blockedPackages) {
@@ -537,7 +538,7 @@ private fun InstalledAppIcon(packageName: String, label: String) {
         key1 = context,
         key2 = packageName
     ) {
-        value = withContext(Dispatchers.IO) {
+        val loaded = withContext(Dispatchers.IO) {
             runCatching {
                 val drawable = context.packageManager.getApplicationIcon(packageName)
                 val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
@@ -547,6 +548,7 @@ private fun InstalledAppIcon(packageName: String, label: String) {
                 bitmap.asImageBitmap()
             }.getOrNull()
         }
+        value = loaded
     }
     val loadedIcon = icon
     if (loadedIcon != null) {
