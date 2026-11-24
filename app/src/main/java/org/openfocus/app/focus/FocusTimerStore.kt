@@ -52,6 +52,18 @@ class FocusTimerStore(context: Context) {
         return FocusTimerSnapshot(false, null, storedRemaining, storedDuration, completed, storedIntention)
     }
 
+    fun clearForDataDeletion() {
+        alarmScheduler.cancel()
+        preferences.edit().clear().commit()
+    }
+
+    fun isStrictModeEnabled(): Boolean = preferences.getBoolean(KEY_STRICT_MODE, false)
+
+    fun setStrictModeEnabled(enabled: Boolean) {
+        if (load().isRunning) return
+        preferences.edit().putBoolean(KEY_STRICT_MODE, enabled).apply()
+    }
+
     fun start(
         nowEpochMillis: Long = System.currentTimeMillis(),
         durationMillis: Long? = null,
@@ -85,6 +97,7 @@ class FocusTimerStore(context: Context) {
     }
 
     fun pause(nowEpochMillis: Long = System.currentTimeMillis()) {
+        if (isStrictModeEnabled()) return
         val current = load(nowEpochMillis)
         if (!current.isRunning) return
 
@@ -97,6 +110,7 @@ class FocusTimerStore(context: Context) {
     }
 
     fun reset(durationMillis: Long = DEFAULT_DURATION_MILLIS) {
+        if (load().isRunning && isStrictModeEnabled()) return
         val safeDuration = durationMillis.coerceIn(MIN_DURATION_MILLIS, MAX_DURATION_MILLIS)
         preferences.edit()
             .putBoolean(KEY_RUNNING, false)
@@ -133,6 +147,7 @@ class FocusTimerStore(context: Context) {
             .remove(KEY_END_AT)
             .putLong(KEY_REMAINING, 0L)
             .putBoolean(KEY_COMPLETED, true)
+            .putBoolean(KEY_STRICT_MODE, false)
             .putBoolean(KEY_NOTIFICATION_PENDING, completedOnTime || preferences.getBoolean(KEY_NOTIFICATION_PENDING, false))
             .remove(KEY_INTENTION)
             .apply()
@@ -163,6 +178,7 @@ class FocusTimerStore(context: Context) {
         private const val KEY_COMPLETED = "completed"
         private const val KEY_NOTIFICATION_PENDING = "notification_pending"
         private const val KEY_INTENTION = "session_intention"
+        private const val KEY_STRICT_MODE = "strict_mode_enabled"
         private const val MAX_INTENTION_LENGTH = 120
     }
 }

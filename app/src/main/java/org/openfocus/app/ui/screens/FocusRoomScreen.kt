@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -70,7 +71,15 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     var remaining by remember { mutableStateOf(snapshot.remainingMillis) }
     var selectedMinutes by remember { mutableIntStateOf((snapshot.totalDurationMillis / 60_000L).toInt()) }
     var customMinutesText by remember { mutableStateOf("") }
-    var intention by remember { mutableStateOf(initialSnapshot.intention.orEmpty()) }
+    var intention by remember {
+        mutableStateOf(
+            initialSnapshot.intention.orEmpty().ifBlank {
+                context.getSharedPreferences("focus_ui_settings", Context.MODE_PRIVATE)
+                    .getString("next_focus_intention", "").orEmpty()
+            }
+        )
+    }
+    var strictModeEnabled by remember { mutableStateOf(store.isStrictModeEnabled()) }
     val focusUiPreferences = remember(context) { context.getSharedPreferences("focus_ui_settings", Context.MODE_PRIVATE) }
     var selectedTheme by remember { mutableStateOf(focusUiPreferences.getString("focus_theme", "Forest") ?: "Forest") }
     var pomodoroMode by remember { mutableStateOf(false) }
@@ -85,9 +94,11 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
             delay(1_000L)
             snapshot = store.load()
             remaining = snapshot.remainingMillis
+            strictModeEnabled = store.isStrictModeEnabled()
             if (snapshot.isCompleted && store.takeCompletionNotification()) FocusCompletionNotification.show(context)
         }
         remaining = snapshot.remainingMillis
+        strictModeEnabled = store.isStrictModeEnabled()
         if (snapshot.isCompleted && store.takeCompletionNotification()) FocusCompletionNotification.show(context)
     }
 
@@ -103,6 +114,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
         } else store.start(intention = intention.trim())
         snapshot = store.load()
         remaining = snapshot.remainingMillis
+        focusUiPreferences.edit().remove("next_focus_intention").apply()
     }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         startOrResume()
@@ -204,6 +216,30 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("STRICT SESSION", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
+                        Text(
+                            if (strictModeEnabled && snapshot.isRunning) "Pause and reset are locked"
+                            else if (strictModeEnabled) "Lock controls when you start"
+                            else "Normal timer controls",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Switch(
+                        checked = strictModeEnabled,
+                        enabled = !snapshot.isRunning,
+                        onCheckedChange = { enabled ->
+                            store.setStrictModeEnabled(enabled)
+                            strictModeEnabled = store.isStrictModeEnabled()
+                        }
+                    )
+                }
+                Text(
+                    "When active, Open Focus disables in-app pause and reset until the timer finishes. It cannot prevent force-stop, clearing app data, removing Accessibility access or restarting the phone.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
                 Text("SESSION LENGTH", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
@@ -227,6 +263,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                 }
                 Button(
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !(snapshot.isRunning && strictModeEnabled),
                     onClick = {
                         if (snapshot.isRunning) {
                             store.pause()
@@ -238,9 +275,19 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else startOrResume()
                     }
-                ) { Text(if (snapshot.isRunning) "Pause session" else if (snapshot.isCompleted) "Start again" else "Start focus session") }
+                ) {
+                    Text(
+                        when {
+                            snapshot.isRunning && strictModeEnabled -> "Strict session in progress"
+                            snapshot.isRunning -> "Pause session"
+                            snapshot.isCompleted -> "Start again"
+                            else -> "Start focus session"
+                        }
+                    )
+                }
                 OutlinedButton(
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !(snapshot.isRunning && strictModeEnabled),
                     onClick = {
                         store.reset(selectedMinutes * 60_000L)
                         snapshot = store.load()

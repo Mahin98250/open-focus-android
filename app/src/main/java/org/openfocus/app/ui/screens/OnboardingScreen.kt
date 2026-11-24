@@ -38,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -60,6 +61,8 @@ import androidx.compose.ui.unit.sp
 import org.openfocus.app.blocking.AppBlockStore
 import org.openfocus.app.focus.FocusTimerStore
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private data class WelcomePage(
     val eyebrow: String,
@@ -135,25 +138,33 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     var focusPriorities by rememberSaveable { mutableStateOf(setOf("Study & exams")) }
     var scanComplete by rememberSaveable { mutableStateOf(false) }
 
-    val scannedApps = remember(context) {
-        val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        @Suppress("DEPRECATION")
-        context.packageManager.queryIntentActivities(launchIntent, 0)
-            .mapNotNull { result ->
-                val packageName = result.activityInfo?.packageName ?: return@mapNotNull null
-                if (packageName == context.packageName) return@mapNotNull null
-                val label = result.loadLabel(context.packageManager).toString()
-                val normalized = (label + " " + packageName).lowercase(Locale.ROOT)
-                val suggested = packageName in suggestedPackages ||
-                    distractionWords.any { word -> normalized.contains(word) }
-                ScannedApp(packageName, label, suggested)
-            }
-            .distinctBy { it.packageName }
-            .sortedWith(compareByDescending<ScannedApp> { it.suggested }.thenBy { it.label.lowercase(Locale.ROOT) })
+    var scannedApps by remember(context) { mutableStateOf<List<ScannedApp>>(emptyList()) }
+    var isScanningApps by remember(context) { mutableStateOf(true) }
+    LaunchedEffect(context) {
+        isScanningApps = true
+        scannedApps = withContext(Dispatchers.IO) {
+            runCatching {
+                val launchIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(launchIntent, 0)
+                    .mapNotNull { result ->
+                        val packageName = result.activityInfo?.packageName ?: return@mapNotNull null
+                        if (packageName == context.packageName) return@mapNotNull null
+                        val label = result.loadLabel(context.packageManager).toString()
+                        val normalized = (label + " " + packageName).lowercase(Locale.ROOT)
+                        val suggested = packageName in suggestedPackages ||
+                            distractionWords.any { word -> normalized.contains(word) }
+                        ScannedApp(packageName, label, suggested)
+                    }
+                    .distinctBy { it.packageName }
+                    .sortedWith(compareByDescending<ScannedApp> { it.suggested }.thenBy { it.label.lowercase(Locale.ROOT) })
+            }.getOrDefault(emptyList())
+        }
+        isScanningApps = false
     }
 
     val suggested = scannedApps.filter { it.suggested }
-    val visibleApps = scannedApps.take(60)
+    val visibleApps = scannedApps.take(30)
     val progress = (page + 1).toFloat() / 8f
     val rotation by animateFloatAsState(
         targetValue = if (page % 2 == 0) -7f else 7f,
@@ -406,7 +417,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                         Text("✦  DISTRACTION SCAN", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall)
                                         Text(
-                                            if (scannedApps.isEmpty()) "No launchable apps were found on this device." else "${scannedApps.size} apps found · ${suggested.size} suggestions",
+                                            when {
+                                                isScanningApps -> "Checking installed apps in the background…"
+                                                scannedApps.isEmpty() -> "No launchable apps were found on this device."
+                                                else -> "${scannedApps.size} apps found · ${suggested.size} suggestions"
+                                            },
                                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                                             fontWeight = FontWeight.SemiBold
                                         )
@@ -457,7 +472,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     }
                                 }
                                 if (scannedApps.size > visibleApps.size) {
-                                    Text("Showing the first ${visibleApps.size} apps. You can manage the complete app list later in Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                    Text("Showing the first ${visibleApps.size} apps to keep setup fast. You can manage the complete app list later in Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                                 }
                                 if (suggested.isEmpty()) {
                                     Text("No familiar social or entertainment apps were recognised. You can select apps later from Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -583,6 +598,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
             Column(Modifier.fillMaxWidth().padding(top = 22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
+                    enabled = page != 3 || !isScanningApps,
                     onClick = {
                         if (page == 3) scanComplete = true
                         if (page == 7) finishSetup() else page += 1
@@ -631,19 +647,25 @@ private fun SummaryLine(label: String, value: String) {
 @Composable
 private fun InstalledAppIcon(packageName: String, label: String) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    val icon = remember(context, packageName) {
-        runCatching {
-            val drawable = context.packageManager.getApplicationIcon(packageName)
-            val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
-            bitmap.asImageBitmap()
-        }.getOrNull()
+    var icon by remember(context, packageName) {
+        mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
     }
-    if (icon != null) {
+    LaunchedEffect(context, packageName) {
+        icon = withContext(Dispatchers.IO) {
+            runCatching {
+                val drawable = context.packageManager.getApplicationIcon(packageName)
+                val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
+                drawable.draw(canvas)
+                bitmap.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+    val loadedIcon = icon
+    if (loadedIcon != null) {
         Image(
-            bitmap = icon,
+            bitmap = loadedIcon,
             contentDescription = "$label app icon",
             modifier = Modifier.size(42.dp).padding(end = 8.dp),
             contentScale = ContentScale.Fit

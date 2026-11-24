@@ -102,6 +102,9 @@ class DailyAppLimitStore(private val context: Context) {
         private const val KEY_LIMITS = "limits"
         private const val MAX_MINUTES = 24 * 60
         private const val MILLIS_PER_MINUTE = 60_000L
-        private const val USAGE_CACHE_MILLIS = 3_000L
+        // Usage totals are aggregate OS queries. Refreshing every 10 seconds keeps
+        // accessibility callbacks responsive while keeping daily-limit enforcement
+        // reasonably close to the configured threshold.
+        private const val USAGE_CACHE_MILLIS = 10_000L
     }
 }

@@ -34,6 +34,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
     private var lastBlockedPackage: String? = null
     private var lastBlockedAtMillis: Long = 0L
     private var youtubeStudyOverlay = false
+    private var lastYoutubeInspectionAtMillis = 0L
+    private var cachedYoutubeInspection: YoutubeScreenInspection? = null
 
     // Reuse stores on accessibility callbacks and watchdog ticks.
     private val timerStore by lazy { FocusTimerStore(this) }
@@ -96,11 +98,25 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         }
 
         if (foregroundPackage == YOUTUBE_PACKAGE && youtubeStudyModeStore.isEnabled()) {
-            val inspection = inspectYoutubeScreen()
+            // YouTube emits many content-change and scroll callbacks while rendering.
+            // Re-walking its accessibility tree on every callback causes avoidable UI
+            // jank. Reuse the latest decision for a short window and rescan promptly
+            // on a new window or after the content settles.
+            val now = System.currentTimeMillis()
+            val needsFreshInspection =
+                cachedYoutubeInspection == null ||
+                    event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED ||
+                    now - lastYoutubeInspectionAtMillis >= YOUTUBE_SCAN_INTERVAL_MILLIS
+            val inspection = if (needsFreshInspection) {
+                lastYoutubeInspectionAtMillis = now
+                inspectYoutubeScreen().also { cachedYoutubeInspection = it }
+            } else {
+                cachedYoutubeInspection!!
+            }
             if (inspection.decision != YoutubeContentDecision.EDUCATIONAL) {
                 youtubeStudyOverlay = true
                 lastBlockedPackage = YOUTUBE_PACKAGE
-                lastBlockedAtMillis = System.currentTimeMillis()
+                lastBlockedAtMillis = now
                 showBlockerOverlay(YOUTUBE_PACKAGE, dailyLimitReached = false, studyMode = true,
                     detectedTitle = inspection.blockedTitle)
                 return
@@ -110,6 +126,9 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                 youtubeStudyOverlay = false
                 removeBlockerOverlay()
             }
+        } else if (foregroundPackage != YOUTUBE_PACKAGE) {
+            cachedYoutubeInspection = null
+            lastYoutubeInspectionAtMillis = 0L
         }
 
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
@@ -356,7 +375,8 @@ class AppBlockingAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val YOUTUBE_PACKAGE = "com.google.android.youtube"
-        private const val MAX_ACCESSIBILITY_NODES = 350
+        private const val MAX_ACCESSIBILITY_NODES = 180
+        private const val YOUTUBE_SCAN_INTERVAL_MILLIS = 450L
         private const val REPEAT_GUARD_MILLIS = 2_000L
         private const val WATCHDOG_INTERVAL_MILLIS = 1_000L
     }

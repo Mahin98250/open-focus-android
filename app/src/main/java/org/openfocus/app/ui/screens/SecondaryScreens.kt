@@ -1,5 +1,7 @@
 package org.openfocus.app.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,13 +45,22 @@ import android.content.Intent
 import android.provider.Settings
 import org.openfocus.app.usage.UsageStatsRepository
 import org.openfocus.app.focus.FocusSessionHistoryStore
+import org.openfocus.app.focus.FocusTimerStore
 import org.openfocus.app.blocking.AppBlockSchedule
+import org.openfocus.app.blocking.AppBlockStore
+import org.openfocus.app.blocking.DailyAppLimitStore
+import org.openfocus.app.blocking.YoutubeStudyModeStore
 import org.openfocus.app.blocking.BlockScheduleStore
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.openfocus.app.planner.PlannerStore
 import org.openfocus.app.planner.PlannerTask
+import org.json.JSONArray
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun PlannerScreen(modifier: Modifier = Modifier) {
@@ -672,7 +684,7 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
 }
 
 @Composable
-fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: () -> Unit) {
+fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: (String) -> Unit) {
     var roomName by remember { mutableStateOf("Study session") }
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("FOCUS WITH OTHERS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
@@ -685,15 +697,18 @@ fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: () -> Unit)
         ) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("YOUR FOCUS ROOM", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
-                Text("Create a quiet study space.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Set an intention for your next session.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = roomName,
-                    onValueChange = { roomName = it.take(40) },
+                    onValueChange = { roomName = it.take(120) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text("Session name") }
+                    label = { Text("What will you focus on?") }
                 )
-                Button(onClick = onStartFocus, modifier = Modifier.fillMaxWidth()) { Text("Start my focus session") }
+                Button(
+                    onClick = { onStartFocus(roomName.trim().ifBlank { "Study session" }) },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Open my focus timer") }
             }
         }
         Card(
@@ -753,6 +768,47 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         )
     }
     var goalSaved by remember { mutableStateOf(false) }
+    var exportPayload by remember { mutableStateOf("") }
+    var dataActionStatus by remember { mutableStateOf<String?>(null) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) {
+            dataActionStatus = "Export cancelled."
+        } else {
+            val result = runCatching {
+                val output = context.contentResolver.openOutputStream(uri)
+                    ?: error("Android could not open the selected file.")
+                output.bufferedWriter(Charsets.UTF_8).use { it.write(exportPayload) }
+            }
+            dataActionStatus = if (result.isSuccess) {
+                "Backup saved successfully."
+            } else {
+                "Backup could not be saved. Please choose another location."
+            }
+        }
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Delete Open Focus data?") },
+            text = {
+                Text("This permanently clears your local focus history, tasks, app block list, schedules, limits and preferences from this phone. It cannot be undone. Android's Accessibility permission itself will not be changed.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    clearOpenFocusLocalData(context)
+                    showDeleteConfirmation = false
+                    dataActionStatus = "Local data cleared. Restart Open Focus to run setup again."
+                }) { Text("Delete data") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("SETTINGS & PREFERENCES", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
@@ -794,6 +850,32 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             }
         }
         Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("YOUR DATA", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                Text("Back up or clear this device.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Export creates a readable JSON backup of your focus history, tasks, app selections, schedules and preferences. Nothing is uploaded.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Button(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = {
+                        exportPayload = buildOpenFocusLocalExport(context)
+                        val stamp = SimpleDateFormat("yyyyMMdd-HHmm", Locale.ROOT).format(Date())
+                        exportLauncher.launch("open-focus-backup-$stamp.json")
+                    }
+                ) { Text("Export my data") }
+                TextButton(
+                    onClick = { showDeleteConfirmation = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Delete all local app data", color = MaterialTheme.colorScheme.error) }
+                dataActionStatus?.let {
+                    Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+        Card(shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("ABOUT", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 Text("Open Focus", fontWeight = FontWeight.SemiBold)
@@ -802,4 +884,97 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+private fun buildOpenFocusLocalExport(context: android.content.Context): String {
+    val root = JSONObject()
+        .put("format", "open-focus-backup")
+        .put("schema_version", 1)
+        .put("exported_at_epoch_millis", System.currentTimeMillis())
+
+    val onboarding = context.getSharedPreferences("app_onboarding", android.content.Context.MODE_PRIVATE)
+    val priorities = JSONArray()
+    onboarding.getStringSet("focus_priorities", emptySet()).orEmpty().sorted().forEach { priorities.put(it) }
+    root.put(
+        "preferences",
+        JSONObject()
+            .put("daily_study_goal_hours", onboarding.getFloat("daily_study_goal_hours", 0f).toDouble())
+            .put("preferred_focus_minutes", onboarding.getInt("preferred_focus_minutes", 25))
+            .put("reported_daily_screen_hours", onboarding.getInt("reported_daily_screen_hours", 0))
+            .put("focus_priorities", priorities)
+    )
+
+    val blockedApps = JSONArray()
+    AppBlockStore(context).blockedPackages().sorted().forEach { blockedApps.put(it) }
+    root.put("blocked_apps", blockedApps)
+
+    val limits = JSONObject()
+    DailyAppLimitStore(context).limitsMinutes().toSortedMap().forEach { (packageName, minutes) ->
+        limits.put(packageName, minutes)
+    }
+    root.put("daily_app_limits_minutes", limits)
+    root.put("youtube_study_mode_enabled", YoutubeStudyModeStore(context).isEnabled())
+
+    val schedules = JSONArray()
+    BlockScheduleStore(context).load().forEach { schedule ->
+        val days = JSONArray()
+        schedule.daysOfWeek.sorted().forEach { days.put(it) }
+        schedules.put(
+            JSONObject()
+                .put("id", schedule.id)
+                .put("name", schedule.name)
+                .put("start_minute_of_day", schedule.startMinuteOfDay)
+                .put("end_minute_of_day", schedule.endMinuteOfDay)
+                .put("days_of_week", days)
+                .put("enabled", schedule.enabled)
+        )
+    }
+    root.put("schedules", schedules)
+
+    val tasks = JSONArray()
+    PlannerStore(context).load().forEach { task ->
+        tasks.put(JSONObject().put("id", task.id).put("title", task.title).put("completed", task.completed))
+    }
+    root.put("tasks", tasks)
+
+    val sessions = JSONArray()
+    FocusSessionHistoryStore(context).load().forEach { session ->
+        val item = JSONObject()
+            .put("completed_at_epoch_millis", session.completedAtEpochMillis)
+            .put("duration_millis", session.durationMillis)
+        session.intention?.let { item.put("intention", it) }
+        sessions.put(item)
+    }
+    root.put("completed_focus_sessions", sessions)
+
+    val timer = FocusTimerStore(context).load()
+    root.put(
+        "timer",
+        JSONObject()
+            .put("is_running", timer.isRunning)
+            .put("end_at_epoch_millis", timer.endAtEpochMillis ?: JSONObject.NULL)
+            .put("remaining_millis", timer.remainingMillis)
+            .put("total_duration_millis", timer.totalDurationMillis)
+            .put("is_completed", timer.isCompleted)
+            .put("intention", timer.intention ?: JSONObject.NULL)
+    )
+    return root.toString(2)
+}
+
+private fun clearOpenFocusLocalData(context: android.content.Context) {
+    // Cancel any scheduled completion alarm, including during a strict session.
+    FocusTimerStore(context).clearForDataDeletion()
+    listOf(
+        "app_onboarding",
+        "app_block_rules",
+        "app_block_schedules",
+        "daily_app_limits",
+        "youtube_study_mode",
+        "app_block_disclosure",
+        "usage_access_disclosure",
+        "focus_session_history",
+        "focus_timer",
+        "planner_tasks",
+        "focus_ui_settings"
+    ).forEach { context.deleteSharedPreferences(it) }
 }

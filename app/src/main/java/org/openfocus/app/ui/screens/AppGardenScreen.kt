@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,6 +47,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -55,6 +58,13 @@ import org.openfocus.app.blocking.AppBlockingAccessibilityService
 import org.openfocus.app.blocking.YoutubeStudyModeStore
 
 private data class LaunchableApp(val packageName: String, val label: String)
+
+private val REELS_AND_SHORTS_PACKAGES = setOf(
+    "com.instagram.android",
+    "com.zhiliaoapp.musically",
+    "com.google.android.youtube",
+    "com.snapchat.android"
+)
 
 @Composable
 fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
@@ -78,24 +88,33 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     var showSelectedOnly by remember { mutableStateOf(false) }
     var blockerMode by remember { mutableStateOf("Apps") }
 
-    val installedApps = remember {
-        val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        @Suppress("DEPRECATION")
-        context.packageManager.queryIntentActivities(launcherIntent, 0)
-            .mapNotNull { resolve ->
-                val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
-                if (packageName == context.packageName) return@mapNotNull null
-                LaunchableApp(packageName, resolve.loadLabel(context.packageManager).toString())
-            }
-            .distinctBy { it.packageName }
-            .sortedBy { it.label.lowercase() }
+    // Package discovery can be slow on devices with many installed apps.
+    // Keep it off the main thread so opening the blocker screen stays responsive.
+    var installedApps by remember(context) { mutableStateOf<List<LaunchableApp>>(emptyList()) }
+    LaunchedEffect(context) {
+        installedApps = withContext(Dispatchers.IO) {
+            runCatching {
+                val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(launcherIntent, 0)
+                    .mapNotNull { resolve ->
+                        val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
+                        if (packageName == context.packageName) return@mapNotNull null
+                        LaunchableApp(packageName, resolve.loadLabel(context.packageManager).toString())
+                    }
+                    .distinctBy { it.packageName }
+                    .sortedBy { it.label.lowercase() }
+            }.getOrDefault(emptyList())
+        }
     }
 
-    val filteredApps = installedApps.filter { app ->
-        val query = searchQuery.trim()
-        val matchesQuery = query.isBlank() || app.label.contains(query, ignoreCase = true) || app.packageName.contains(query, ignoreCase = true)
-        val matchesSelection = !showSelectedOnly || app.packageName in blockedPackages
-        matchesQuery && matchesSelection
+    val filteredApps = remember(installedApps, searchQuery, showSelectedOnly, blockedPackages) {
+        installedApps.filter { app ->
+            val query = searchQuery.trim()
+            val matchesQuery = query.isBlank() || app.label.contains(query, ignoreCase = true) || app.packageName.contains(query, ignoreCase = true)
+            val matchesSelection = !showSelectedOnly || app.packageName in blockedPackages
+            matchesQuery && matchesSelection
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -291,10 +310,19 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                                     }
                                 )
                                 Box {
-                                    TextButton(onClick = { expandedLimitPackage = app.packageName }) {
+                                    TextButton(
+                                        onClick = {
+                                            if (usageAccessEnabled) {
+                                                expandedLimitPackage = app.packageName
+                                            } else {
+                                                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                                            }
+                                        }
+                                    ) {
                                         val minutes = dailyLimits[app.packageName]
                                         Text(
                                             when {
+                                                !usageAccessEnabled -> "Enable access"
                                                 minutes == null -> "No limit"
                                                 minutes < 60 -> "${minutes}m/day"
                                                 minutes % 60 == 0 -> "${minutes / 60}h/day"
@@ -373,11 +401,27 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                                 Text(if (youtubeStudyEnabled) "YouTube is restricted to clearly approved topics." else "Turn it on to pause non-study or unverified YouTube screens.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                             }
-                            Switch(checked = youtubeStudyEnabled, enabled = disclosureAccepted, onCheckedChange = { enabled ->
-                                youtubeStudyModeStore.setEnabled(enabled)
-                                youtubeStudyEnabled = enabled
-                            })
+                            Switch(
+                                checked = youtubeStudyEnabled,
+                                enabled = disclosureAccepted && serviceEnabled,
+                                onCheckedChange = { enabled ->
+                                    // Study Mode depends on the running Accessibility service.
+                                    // Never display an enabled state that cannot actually enforce rules.
+                                    youtubeStudyModeStore.setEnabled(enabled)
+                                    youtubeStudyEnabled = enabled
+                                }
+                            )
                         }
+                    }
+                    if (!serviceEnabled || !disclosureAccepted) {
+                        Text(
+                            when {
+                                !disclosureAccepted -> "To turn this on, first accept the privacy note above."
+                                else -> "To turn this on, enable Open Focus Accessibility in the Apps tab and return here."
+                            },
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                     Text("Examples allowed: lessons, CBSE chapters, science, maths, coding, tutorials, productivity and motivation.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
@@ -410,24 +454,73 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                     }
                 }
             }
+        } else if (blockerMode == "Reels") {
+            val supportedReelsApps = installedApps.filter { it.packageName in REELS_AND_SHORTS_PACKAGES }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("SHORT-FORM DISTRACTIONS", color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+                    Text("Pause the endless scroll.", style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold)
+                    Text(
+                        "Choose which social apps should be paused during focus sessions and active schedules. This blocks the whole app; it does not selectively hide individual Reels or Shorts inside third-party apps.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (supportedReelsApps.isEmpty()) {
+                        Text("No supported social apps were found on this device.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        supportedReelsApps.forEach { app ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                InstalledAppIcon(app.packageName, app.label)
+                                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                                    Text(app.label, fontWeight = FontWeight.SemiBold)
+                                    Text(
+                                        if (app.packageName in blockedPackages) "Paused during focus" else "Allowed during focus",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                Switch(
+                                    checked = app.packageName in blockedPackages,
+                                    onCheckedChange = { selected ->
+                                        store.setBlocked(app.packageName, selected)
+                                        blockedPackages = store.blockedPackages()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Text("App blocking access must be enabled in the Apps tab. YouTube Study Mode can still allow videos classified as educational.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                }
+            }
         } else {
-            val title = if (blockerMode == "Reels") "Reels & Shorts" else "Website protection"
-            val description = if (blockerMode == "Reels")
-                "Short-form feed detection is not enabled yet. For now, add Instagram, TikTok or YouTube to your app pause list to block the whole app during focus."
-            else
-                "Website filtering needs a dedicated local VPN-based filter and Android's VPN consent. Website-by-website filtering is not active yet."
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
             ) {
                 Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                    Text(if (blockerMode == "Reels") "SHORT-FORM CONTENT" else "BROWSER CONTROL",
-                        color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
-                    Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("BROWSER CONTROL", color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+                    Text("Website protection", style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold)
+                    Text(
+                        "Website-by-website filtering is not active yet. It requires a local Android VPN filter and a separate system permission. No VPN is installed or enabled by this screen.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text("For now, add your browser to the Apps block list to pause it during focus sessions.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button(onClick = { blockerMode = "Apps" }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Manage whole-app blocks")
+                        Text("Manage app blocks")
                     }
                 }
             }
@@ -449,19 +542,27 @@ private fun isBlockingServiceEnabled(context: Context): Boolean {
 @Composable
 private fun InstalledAppIcon(packageName: String, label: String) {
     val context = LocalContext.current
-    val icon = remember(context, packageName) {
-        runCatching {
-            val drawable = context.packageManager.getApplicationIcon(packageName)
-            val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
-            bitmap.asImageBitmap()
-        }.getOrNull()
+    // Resolving and rasterising package icons on the UI thread creates visible
+    // stutters while scrolling. Load each icon asynchronously and cache its state.
+    var icon by remember(context, packageName) {
+        mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
     }
-    if (icon != null) {
+    LaunchedEffect(context, packageName) {
+        icon = withContext(Dispatchers.IO) {
+            runCatching {
+                val drawable = context.packageManager.getApplicationIcon(packageName)
+                val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
+                drawable.draw(canvas)
+                bitmap.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+    val loadedIcon = icon
+    if (loadedIcon != null) {
         Image(
-            bitmap = icon,
+            bitmap = loadedIcon,
             contentDescription = "$label app icon",
             modifier = Modifier.size(44.dp),
             contentScale = ContentScale.Fit
