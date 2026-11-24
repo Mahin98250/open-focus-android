@@ -684,7 +684,7 @@ fun GrowthScreen(modifier: Modifier = Modifier, onBack: () -> Unit) {
 }
 
 @Composable
-fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: () -> Unit) {
+fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: (String) -> Unit) {
     var roomName by remember { mutableStateOf("Study session") }
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("FOCUS WITH OTHERS", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.5.sp)
@@ -697,15 +697,18 @@ fun FocusTogetherScreen(modifier: Modifier = Modifier, onStartFocus: () -> Unit)
         ) {
             Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("YOUR FOCUS ROOM", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.2.sp)
-                Text("Create a quiet study space.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Set an intention for your next session.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 OutlinedTextField(
                     value = roomName,
-                    onValueChange = { roomName = it.take(40) },
+                    onValueChange = { roomName = it.take(120) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    label = { Text("Session name") }
+                    label = { Text("What will you focus on?") }
                 )
-                Button(onClick = onStartFocus, modifier = Modifier.fillMaxWidth()) { Text("Start my focus session") }
+                Button(
+                    onClick = { onStartFocus(roomName.trim().ifBlank { "Study session" }) },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Open my focus timer") }
             }
         }
         Card(
