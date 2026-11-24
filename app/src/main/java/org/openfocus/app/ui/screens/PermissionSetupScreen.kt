@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -54,6 +55,12 @@ fun PermissionSetupScreen(onContinue: () -> Unit) {
     var accessibilityGranted by remember { mutableStateOf(isAccessibilityEnabled(context)) }
     var usageGranted by remember { mutableStateOf(DailyAppLimitStore(context).hasUsageAccess()) }
     var notificationsGranted by remember { mutableStateOf(hasNotificationPermission(context)) }
+    val disclosurePreferences = remember {
+        context.getSharedPreferences("app_block_disclosure", Context.MODE_PRIVATE)
+    }
+    var disclosureAccepted by remember {
+        mutableStateOf(disclosurePreferences.getBoolean("accessibility_disclosure_accepted", false))
+    }
 
     fun refresh() {
         accessibilityGranted = isAccessibilityEnabled(context)
@@ -97,10 +104,23 @@ fun PermissionSetupScreen(onContinue: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
         }
 
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = disclosureAccepted,
+                onCheckedChange = { accepted ->
+                    disclosureAccepted = accepted
+                    disclosurePreferences.edit().putBoolean("accessibility_disclosure_accepted", accepted).apply()
+                }
+            )
+            Text("I understand that Open Focus uses Accessibility to detect selected apps and, only when enabled, inspect visible YouTube video titles. It does not read messages or keystrokes.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        }
+
         PermissionCard(
             number = "01",
             title = "App blocking access",
             required = true,
+            enabled = disclosureAccepted,
             granted = accessibilityGranted,
             description = "Required. Lets Open Focus detect when a selected app opens and place the focus interruption screen over it.",
             buttonLabel = if (accessibilityGranted) "Review permission" else "Open Accessibility settings",
@@ -162,6 +182,7 @@ private fun PermissionCard(
     title: String,
     required: Boolean,
     granted: Boolean,
+    enabled: Boolean = true,
     description: String,
     buttonLabel: String,
     onClick: () -> Unit
@@ -180,7 +201,7 @@ private fun PermissionCard(
             Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall)
             if (!granted || required) {
-                OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) { Text(buttonLabel) }
+                OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(buttonLabel) }
             }
         }
     }
