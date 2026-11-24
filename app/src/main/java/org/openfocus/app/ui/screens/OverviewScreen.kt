@@ -170,8 +170,10 @@ private fun MetricCard(label: String, value: String, caption: String, modifier: 
     }
 }
 
-private fun Float.toHoursLabel(): String =
-    if (this % 1f == 0f) "${toInt()}h/day" else "${"%.1f".format(Locale.ROOT, this)}h/day"
+private fun Float.toHoursLabel(): String {
+    val decimalHours = "%.1f".format(Locale.ROOT, this)
+    return if (this % 1f == 0f) "${toInt()}h/day" else "${decimalHours}h/day"
+}
 
 private fun formatFocusDuration(durationMillis: Long): String {
     val totalMinutes = durationMillis / 60_000L

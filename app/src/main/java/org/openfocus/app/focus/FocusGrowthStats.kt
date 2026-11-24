@@ -36,8 +36,8 @@ object FocusGrowthStats {
             else -> null
         }
         var currentStreak = 0
-        if (currentAnchor != null) {
-            var date = currentAnchor
+        currentAnchor?.let { anchor ->
+            var date: LocalDate = anchor
             while (date in activeDates) {
                 currentStreak += 1
                 date = date.minusDays(1)
