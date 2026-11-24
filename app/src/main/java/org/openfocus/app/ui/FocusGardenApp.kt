@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.openfocus.app.ui.screens.AppGardenScreen
 import org.openfocus.app.ui.screens.FocusRoomScreen
+import org.openfocus.app.ui.screens.FocusTogetherScreen
 import org.openfocus.app.ui.screens.GrowthScreen
 import org.openfocus.app.ui.screens.InsightsScreen
 import org.openfocus.app.ui.screens.OnboardingScreen
@@ -70,6 +71,7 @@ fun FocusGardenApp() {
                         Text("Open Focus", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp, style = MaterialTheme.typography.titleLarge)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { currentRoute = "groups" }) { Text("Groups") }
                         TextButton(onClick = { currentRoute = "insights" }) { Text("Insights") }
                         TextButton(onClick = { currentRoute = "settings" }) { Text("⋯") }
                     }
@@ -104,6 +106,7 @@ fun FocusGardenApp() {
             "schedules" -> ScheduleScreen(Modifier.padding(innerPadding)) { currentRoute = "apps" }
             "insights" -> InsightsScreen(Modifier.padding(innerPadding)) { currentRoute = "home" }
             "growth" -> GrowthScreen(Modifier.padding(innerPadding)) { currentRoute = "home" }
+            "groups" -> FocusTogetherScreen(Modifier.padding(innerPadding)) { currentRoute = "focus" }
             "settings" -> SettingsScreen(Modifier.padding(innerPadding))
             else -> OverviewScreen(Modifier.padding(innerPadding)) { currentRoute = it }
         }

@@ -142,6 +142,9 @@ fun OverviewScreen(modifier: Modifier = Modifier, onNavigate: (String) -> Unit) 
                 OutlinedButton(onClick = { onNavigate("apps") }, modifier = Modifier.weight(1f)) { Text("App blocker") }
                 OutlinedButton(onClick = { onNavigate("planner") }, modifier = Modifier.weight(1f)) { Text("Study planner") }
             }
+            OutlinedButton(onClick = { onNavigate("groups") }, modifier = Modifier.fillMaxWidth()) {
+                Text("Focus with friends  →")
+            }
         }
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(22.dp)) {
