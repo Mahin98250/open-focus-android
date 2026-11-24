@@ -254,7 +254,11 @@ class AppBlockingAccessibilityService : AccessibilityService() {
      * Unknown screens are paused in strict mode.
      */
     private fun inspectYoutubeScreen(): YoutubeScreenInspection {
-        val root = runCatching { rootInActiveWindow }.getOrNull()
+        val root = runCatching {
+            windows.firstOrNull { window ->
+                runCatching { window.root?.packageName?.toString() == YOUTUBE_PACKAGE }.getOrDefault(false)
+            }?.root
+        }.getOrNull() ?: runCatching { rootInActiveWindow }.getOrNull()
             ?: return YoutubeScreenInspection(YoutubeContentDecision.UNCERTAIN)
         val titles = mutableListOf<Pair<Int, String>>()
         var playerEvidence = false
