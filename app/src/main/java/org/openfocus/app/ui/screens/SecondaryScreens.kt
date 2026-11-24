@@ -971,6 +971,7 @@ private fun clearOpenFocusLocalData(context: android.content.Context) {
         "daily_app_limits",
         "youtube_study_mode",
         "app_block_disclosure",
+        "usage_access_disclosure",
         "focus_session_history",
         "focus_timer",
         "planner_tasks",
