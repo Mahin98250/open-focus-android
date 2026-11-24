@@ -894,7 +894,7 @@ private fun buildOpenFocusLocalExport(context: android.content.Context): String 
 
     val onboarding = context.getSharedPreferences("app_onboarding", android.content.Context.MODE_PRIVATE)
     val priorities = JSONArray()
-    onboarding.getStringSet("focus_priorities", emptySet()).orEmpty().sorted().forEach(priorities::put)
+    onboarding.getStringSet("focus_priorities", emptySet()).orEmpty().sorted().forEach { priorities.put(it) }
     root.put(
         "preferences",
         JSONObject()
@@ -905,7 +905,7 @@ private fun buildOpenFocusLocalExport(context: android.content.Context): String 
     )
 
     val blockedApps = JSONArray()
-    AppBlockStore(context).blockedPackages().sorted().forEach(blockedApps::put)
+    AppBlockStore(context).blockedPackages().sorted().forEach { blockedApps.put(it) }
     root.put("blocked_apps", blockedApps)
 
     val limits = JSONObject()
@@ -918,7 +918,7 @@ private fun buildOpenFocusLocalExport(context: android.content.Context): String 
     val schedules = JSONArray()
     BlockScheduleStore(context).load().forEach { schedule ->
         val days = JSONArray()
-        schedule.daysOfWeek.sorted().forEach(days::put)
+        schedule.daysOfWeek.sorted().forEach { days.put(it) }
         schedules.put(
             JSONObject()
                 .put("id", schedule.id)
@@ -975,5 +975,5 @@ private fun clearOpenFocusLocalData(context: android.content.Context) {
         "focus_timer",
         "planner_tasks",
         "focus_ui_settings"
-    ).forEach(context::deleteSharedPreferences)
+    ).forEach { context.deleteSharedPreferences(it) }
 }
