@@ -26,9 +26,9 @@
 
   // Personalised first-run flow. The browser preview uses sample apps only.
   const welcomeSteps = [
-    ["A LITTLE SPACE FOR YOU", "Your attention<br>deserves a garden.", "Make room for the things you care about. We'll help the noisy apps take a little step back.", "◎", "Let's begin"],
-    ["GENTLE, NOT GUILTY", "Build habits<br>that feel like you.", "Choose your focus rhythm, set kind boundaries and make steady progress—one small session at a time.", "◌", "Continue"],
-    ["PRIVATE BY NATURE", "Your progress<br>belongs to you.", "No ads. No paid tiers. No account required. Your personal focus choices stay on this device.", "◉", "Scan my apps"]
+    ["A CALMER WAY TO FOCUS", "Make space<br>for what matters.", "A little more focus. A little less scrolling. Build a study routine that works around your day.", "◎", "Get started"],
+    ["TAKE CONTROL OF DISTRACTIONS", "Your apps.<br>Your boundaries.", "Choose the apps that pull you away and decide when it is time to put them on pause.", "◌", "Continue"],
+    ["YOUR FOCUS, YOUR WAY", "Build a rhythm<br>that lasts.", "Set a daily goal, choose a focus duration and keep your progress private on this device.", "◉", "Set up my focus"]
   ];
   const previewApps = [
     { name: "Instagram", logo: "instagram", category: "Social · Reels", suggested: true },
