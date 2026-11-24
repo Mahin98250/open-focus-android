@@ -93,16 +93,18 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     var installedApps by remember(context) { mutableStateOf<List<LaunchableApp>>(emptyList()) }
     LaunchedEffect(context) {
         installedApps = withContext(Dispatchers.IO) {
-            val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-            @Suppress("DEPRECATION")
-            context.packageManager.queryIntentActivities(launcherIntent, 0)
-                .mapNotNull { resolve ->
-                    val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
-                    if (packageName == context.packageName) return@mapNotNull null
-                    LaunchableApp(packageName, resolve.loadLabel(context.packageManager).toString())
-                }
-                .distinctBy { it.packageName }
-                .sortedBy { it.label.lowercase() }
+            runCatching {
+                val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(launcherIntent, 0)
+                    .mapNotNull { resolve ->
+                        val packageName = resolve.activityInfo?.packageName ?: return@mapNotNull null
+                        if (packageName == context.packageName) return@mapNotNull null
+                        LaunchableApp(packageName, resolve.loadLabel(context.packageManager).toString())
+                    }
+                    .distinctBy { it.packageName }
+                    .sortedBy { it.label.lowercase() }
+            }.getOrDefault(emptyList())
         }
     }
 
