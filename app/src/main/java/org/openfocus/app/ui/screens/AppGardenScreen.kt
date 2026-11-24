@@ -3,6 +3,7 @@ package org.openfocus.app.ui.screens
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.provider.Settings
@@ -68,6 +69,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     var usageAccessEnabled by remember { mutableStateOf(dailyLimitStore.hasUsageAccess()) }
     var serviceEnabled by remember { mutableStateOf(isBlockingServiceEnabled(context)) }
     var youtubeStudyEnabled by remember { mutableStateOf(youtubeStudyModeStore.isEnabled()) }
+    var youtubeStudyQuery by remember { mutableStateOf("Class 10 CBSE") }
     var showAccessibilitySteps by remember { mutableStateOf(false) }
     var showUsageSteps by remember { mutableStateOf(false) }
     val disclosurePreferences = remember { context.getSharedPreferences("app_block_disclosure", Context.MODE_PRIVATE) }
@@ -363,6 +365,24 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                     Text("Examples blocked: MrBeast, pranks, challenges, gaming, reactions, music videos, Shorts and titles that cannot be confidently identified.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = youtubeStudyQuery,
+                        onValueChange = { youtubeStudyQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Search for a lesson") },
+                        placeholder = { Text("e.g. Class 10 electricity explained") }
+                    )
+                    Button(
+                        onClick = {
+                            val url = Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(youtubeStudyQuery.trim()))
+                            val youtubeIntent = Intent(Intent.ACTION_VIEW, url).setPackage("com.google.android.youtube")
+                            runCatching { context.startActivity(youtubeIntent) }
+                                .onFailure { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
+                        },
+                        enabled = youtubeStudyQuery.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Find study videos  →") }
                     if (!serviceEnabled) {
                         Text("Enable Open Focus Accessibility in the Apps tab first. Android needs that permission to detect YouTube and show the interruption screen.",
                             color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
