@@ -71,7 +71,14 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
     var remaining by remember { mutableStateOf(snapshot.remainingMillis) }
     var selectedMinutes by remember { mutableIntStateOf((snapshot.totalDurationMillis / 60_000L).toInt()) }
     var customMinutesText by remember { mutableStateOf("") }
-    var intention by remember { mutableStateOf(initialSnapshot.intention.orEmpty()) }
+    var intention by remember {
+        mutableStateOf(
+            initialSnapshot.intention.orEmpty().ifBlank {
+                context.getSharedPreferences("focus_ui_settings", Context.MODE_PRIVATE)
+                    .getString("next_focus_intention", "").orEmpty()
+            }
+        )
+    }
     var strictModeEnabled by remember { mutableStateOf(store.isStrictModeEnabled()) }
     val focusUiPreferences = remember(context) { context.getSharedPreferences("focus_ui_settings", Context.MODE_PRIVATE) }
     var selectedTheme by remember { mutableStateOf(focusUiPreferences.getString("focus_theme", "Forest") ?: "Forest") }
@@ -107,6 +114,7 @@ fun FocusRoomScreen(modifier: Modifier = Modifier) {
         } else store.start(intention = intention.trim())
         snapshot = store.load()
         remaining = snapshot.remainingMillis
+        focusUiPreferences.edit().remove("next_focus_intention").apply()
     }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         startOrResume()
