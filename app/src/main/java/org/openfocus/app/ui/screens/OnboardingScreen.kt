@@ -162,7 +162,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     }
 
     val suggested = scannedApps.filter { it.suggested }
-    val visibleApps = scannedApps.take(60)
+    val visibleApps = scannedApps.take(30)
     val progress = (page + 1).toFloat() / 8f
     val rotation by animateFloatAsState(
         targetValue = if (page % 2 == 0) -7f else 7f,
@@ -470,7 +470,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     }
                                 }
                                 if (scannedApps.size > visibleApps.size) {
-                                    Text("Showing the first ${visibleApps.size} apps. You can manage the complete app list later in Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                                    Text("Showing the first ${visibleApps.size} apps to keep setup fast. You can manage the complete app list later in Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                                 }
                                 if (suggested.isEmpty()) {
                                     Text("No familiar social or entertainment apps were recognised. You can select apps later from Apps.", color = MaterialTheme.colorScheme.onSurfaceVariant)
