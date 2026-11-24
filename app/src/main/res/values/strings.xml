@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Open Focus</string>
-    <string name="app_blocking_accessibility_description">Returns to your home screen when you open an app you selected for blocking during a focus period. It reads only the foreground app package name and does not inspect screen content.</string>
+    <string name="app_blocking_accessibility_description">Detects selected foreground apps. When YouTube Study Mode is enabled, it inspects visible YouTube video titles to apply study-only rules. It does not read messages or keystrokes.</string>
 </resources>

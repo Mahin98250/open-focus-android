@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -59,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.openfocus.app.blocking.AppBlockStore
+import org.openfocus.app.focus.FocusTimerStore
 import java.util.Locale
 
 private data class WelcomePage(
@@ -176,6 +176,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             .putStringSet("focus_priorities", focusPriorities)
             .putBoolean("distraction_scan_completed", scanComplete)
             .apply()
+        FocusTimerStore(context).reset(focusMinutes * 60_000L)
         onComplete()
     }
 
@@ -238,7 +239,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 verticalArrangement = Arrangement.spacedBy(15.dp)
                             ) {
                                 Box(
-                                    Modifier.fillMaxWidth().height(300.dp)
+                                    Modifier.fillMaxWidth().height(250.dp)
                                         .background(
                                             Brush.verticalGradient(
                                                 listOf(Color(0xFF062B14), Color(0xFF0B351B), Color(0xFF07100A))
@@ -398,7 +399,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 Text("YOUR PHONE, UNDER YOUR CONTROL", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
                                 Text("Let's find your distractions.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
                                 Text(
-                                    "We scanned the apps that appear in your launcher. Review the suggestions and choose which apps you want paused during focus time. Choosing Instagram blocks the whole app, not only Reels; the same applies to YouTube and Shorts.",
+                                    "We scanned the apps that appear in your launcher. Review the suggestions and choose which apps you want paused during focus time. Choosing an app pauses the whole app during focus time. If you enable YouTube Study Mode later, verified study videos can still play while other YouTube screens remain paused.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
@@ -574,7 +575,6 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                     }
                                 }
                                 Text("Your choices are stored on this device. App blocking needs your explicit permission; it is never switched on silently.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
-                                OutlinedButton(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, modifier = Modifier.fillMaxWidth()) { Text("Enable app blocking in Android Settings") }
                             }
                         }
                     }

@@ -31,6 +31,7 @@ import org.openfocus.app.ui.screens.InsightsScreen
 import org.openfocus.app.ui.screens.OnboardingScreen
 import org.openfocus.app.ui.screens.OverviewScreen
 import org.openfocus.app.ui.screens.PlannerScreen
+import org.openfocus.app.ui.screens.PermissionSetupScreen
 import org.openfocus.app.ui.screens.ScheduleScreen
 import org.openfocus.app.ui.screens.SettingsScreen
 
@@ -39,6 +40,7 @@ private val mainDestinations = listOf(
     MainDestination("home", "Home", "⌂"),
     MainDestination("focus", "Focus", "◷"),
     MainDestination("apps", "Block", "⊘"),
+    MainDestination("insights", "Insights", "⌁"),
     MainDestination("planner", "Plan", "▦")
 )
 
@@ -53,6 +55,15 @@ fun FocusGardenApp() {
         OnboardingScreen {
             preferences.edit().putBoolean("completed", true).apply()
             onboarded = true
+            currentRoute = "permissions"
+        }
+        return
+    }
+
+    if (currentRoute == "permissions") {
+        PermissionSetupScreen {
+            preferences.edit().putBoolean("permissions_setup_seen", true).apply()
+            currentRoute = "home"
         }
         return
     }
@@ -62,18 +73,23 @@ fun FocusGardenApp() {
         topBar = {
             Surface(color = MaterialTheme.colorScheme.background) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 13.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        Text("◉", color = MaterialTheme.colorScheme.primary, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                        Text("Open Focus", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp, style = MaterialTheme.typography.titleLarge)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("◉", color = MaterialTheme.colorScheme.primary, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                        Text("Open Focus", color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.7).sp,
+                            style = MaterialTheme.typography.titleLarge)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextButton(onClick = { currentRoute = "groups" }) { Text("Groups") }
-                        TextButton(onClick = { currentRoute = "insights" }) { Text("Insights") }
-                        TextButton(onClick = { currentRoute = "settings" }) { Text("⋯") }
+                        TextButton(onClick = { currentRoute = "groups" }) {
+                            Text("Together", fontWeight = FontWeight.SemiBold)
+                        }
+                        TextButton(onClick = { currentRoute = "settings" }) {
+                            Text("⚙", fontSize = 18.sp)
+                        }
                     }
                 }
             }
@@ -81,18 +97,20 @@ fun FocusGardenApp() {
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 mainDestinations.forEach { destination ->
-                    val selected = currentRoute == destination.route || (destination.route == "apps" && currentRoute == "schedules")
+                    val selected = currentRoute == destination.route ||
+                        (destination.route == "apps" && currentRoute == "schedules") ||
+                        (destination.route == "insights" && currentRoute == "growth")
                     NavigationBarItem(
                         selected = selected,
                         onClick = { currentRoute = destination.route },
                         icon = {
-                            Text(
-                                destination.glyph,
+                            Text(destination.glyph,
                                 color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.titleLarge
-                            )
+                                style = MaterialTheme.typography.titleLarge)
                         },
-                        label = { Text(destination.label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) }
+                        label = {
+                            Text(destination.label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal, fontSize = 10.sp)
+                        }
                     )
                 }
             }

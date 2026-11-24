@@ -3,6 +3,7 @@ package org.openfocus.app.ui.screens
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.provider.Settings
@@ -51,6 +52,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import org.openfocus.app.blocking.AppBlockStore
 import org.openfocus.app.blocking.DailyAppLimitStore
 import org.openfocus.app.blocking.AppBlockingAccessibilityService
+import org.openfocus.app.blocking.YoutubeStudyModeStore
 
 private data class LaunchableApp(val packageName: String, val label: String)
 
@@ -59,12 +61,15 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     val context = LocalContext.current
     val store = remember { AppBlockStore(context) }
     val dailyLimitStore = remember { DailyAppLimitStore(context) }
+    val youtubeStudyModeStore = remember { YoutubeStudyModeStore(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
     var blockedPackages by remember { mutableStateOf(store.blockedPackages()) }
     var dailyLimits by remember { mutableStateOf(dailyLimitStore.limitsMinutes()) }
     var expandedLimitPackage by remember { mutableStateOf<String?>(null) }
     var usageAccessEnabled by remember { mutableStateOf(dailyLimitStore.hasUsageAccess()) }
     var serviceEnabled by remember { mutableStateOf(isBlockingServiceEnabled(context)) }
+    var youtubeStudyEnabled by remember { mutableStateOf(youtubeStudyModeStore.isEnabled()) }
+    var youtubeStudyQuery by remember { mutableStateOf("Class 10 CBSE") }
     var showAccessibilitySteps by remember { mutableStateOf(false) }
     var showUsageSteps by remember { mutableStateOf(false) }
     val disclosurePreferences = remember { context.getSharedPreferences("app_block_disclosure", Context.MODE_PRIVATE) }
@@ -100,6 +105,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                 blockedPackages = store.blockedPackages()
                 dailyLimits = dailyLimitStore.limitsMinutes()
                 usageAccessEnabled = dailyLimitStore.hasUsageAccess()
+                youtubeStudyEnabled = youtubeStudyModeStore.isEnabled()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -155,8 +161,15 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                         }
                         Button(
                             onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
+                            enabled = disclosureAccepted,
                             modifier = Modifier.fillMaxWidth()
-                        ) { Text(if (serviceEnabled) "Review Accessibility settings" else "Open Accessibility settings") }
+                        ) {
+                            Text(when {
+                                !disclosureAccepted -> "Accept the disclosure below first"
+                                serviceEnabled -> "Review Accessibility settings"
+                                else -> "Open Accessibility settings"
+                            })
+                        }
                     }
                 }
 
@@ -204,7 +217,7 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                         }
                     )
                     Text(
-                        "I understand that the service checks the foreground app name to apply my block list. It does not read screen content.",
+                        "I understand that app blocking checks the foreground app, and YouTube Study Mode inspects visible YouTube video titles only when I turn it on. It does not read messages or keystrokes.",
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -323,55 +336,96 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
             }
         }
         Text(
-            "This service reads only the foreground app package name. It does not read screen text, messages, keystrokes or page content. Blocking is not tamper-proof and may vary by device maker.",
+            "The service detects selected foreground apps. If YouTube Study Mode is enabled, it also inspects visible YouTube video titles to apply your study rules. It does not read messages or keystrokes. Android versions and YouTube layout changes can affect detection.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall
         )
+        } else if (blockerMode == "YouTube") {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                    Text("STUDY-ONLY YOUTUBE", color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp)
+                    Text("Keep the lessons. Leave the rabbit holes.",
+                        style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text("When enabled, Open Focus checks visible YouTube video titles. Clear study, educational and motivational titles can continue. Entertainment and uncertain screens are paused.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = disclosureAccepted,
+                            onCheckedChange = { accepted ->
+                                disclosureAccepted = accepted
+                                disclosurePreferences.edit().putBoolean("accessibility_disclosure_accepted", accepted).apply()
+                            }
+                        )
+                        Text("I understand that Study Mode reads visible YouTube video titles to apply my rules. It does not read messages or keystrokes.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)) {
+                        Row(Modifier.fillMaxWidth().padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(if (youtubeStudyEnabled) "Study Mode is on" else "Study Mode is off",
+                                    fontWeight = FontWeight.SemiBold)
+                                Text(if (youtubeStudyEnabled) "YouTube is restricted to clearly approved topics." else "Turn it on to pause non-study or unverified YouTube screens.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                            }
+                            Switch(checked = youtubeStudyEnabled, enabled = disclosureAccepted, onCheckedChange = { enabled ->
+                                youtubeStudyModeStore.setEnabled(enabled)
+                                youtubeStudyEnabled = enabled
+                            })
+                        }
+                    }
+                    Text("Examples allowed: lessons, CBSE chapters, science, maths, coding, tutorials, productivity and motivation.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("Examples blocked: MrBeast, pranks, challenges, gaming, reactions, music videos, Shorts and titles that cannot be confidently identified.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = youtubeStudyQuery,
+                        onValueChange = { youtubeStudyQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Search for a lesson") },
+                        placeholder = { Text("e.g. Class 10 electricity explained") }
+                    )
+                    Button(
+                        onClick = {
+                            val url = Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(youtubeStudyQuery.trim()))
+                            val youtubeIntent = Intent(Intent.ACTION_VIEW, url).setPackage("com.google.android.youtube")
+                            runCatching { context.startActivity(youtubeIntent) }
+                                .onFailure { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
+                        },
+                        enabled = youtubeStudyQuery.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Find study videos  →") }
+                    if (!serviceEnabled) {
+                        Text("Enable Open Focus Accessibility in the Apps tab first. Android needs that permission to detect YouTube and show the interruption screen.",
+                            color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        Button(onClick = { blockerMode = "Apps" }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Set up app-blocking permission")
+                        }
+                    }
+                }
+            }
         } else {
-            val title = when (blockerMode) {
-                "Reels" -> "Reels & Shorts"
-                "YouTube" -> "YouTube Study Mode"
-                else -> "Website protection"
-            }
-            val description = when (blockerMode) {
-                "Reels" -> "Regain-style short-feed controls need screen-level detection. Open Focus currently detects the foreground app only, so it can pause Instagram or YouTube as a whole, but cannot isolate Reels or Shorts."
-                "YouTube" -> "A channel allow-list and Shorts restriction require reading the YouTube screen structure. That capability is not enabled in this build, so no channel-level filtering is active."
-                else -> "Website filtering needs a dedicated local VPN-based filter and Android's VPN consent. That service is not included yet, so websites are not currently filtered."
-            }
+            val title = if (blockerMode == "Reels") "Reels & Shorts" else "Website protection"
+            val description = if (blockerMode == "Reels")
+                "Short-form feed detection is not enabled yet. For now, add Instagram, TikTok or YouTube to your app pause list to block the whole app during focus."
+            else
+                "Website filtering needs a dedicated local VPN-based filter and Android's VPN consent. Website-by-website filtering is not active yet."
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
             ) {
                 Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                    Text(
-                        when (blockerMode) {
-                            "Reels" -> "SHORT-FORM CONTENT"
-                            "YouTube" -> "STUDY-ONLY BROWSING"
-                            else -> "BROWSER CONTROL"
-                        },
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 1.3.sp
-                    )
+                    Text(if (blockerMode == "Reels") "SHORT-FORM CONTENT" else "BROWSER CONTROL",
+                        color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
                     Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                     Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    androidx.compose.material3.Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
-                    ) {
-                        Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("◷", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
-                            Column(Modifier.weight(1f).padding(start = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("Not active in this build", fontWeight = FontWeight.SemiBold)
-                                Text("No hidden permissions or fake blocking.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                    if (blockerMode == "Reels") {
-                        Text("AVAILABLE ALTERNATIVE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
-                        Text("Add the full Instagram, YouTube, Snapchat or Facebook app to your pause list. This blocks that app while your focus timer or schedule is active.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    }
                     Button(onClick = { blockerMode = "Apps" }, modifier = Modifier.fillMaxWidth()) {
                         Text("Manage whole-app blocks")
                     }

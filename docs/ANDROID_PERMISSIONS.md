@@ -4,17 +4,24 @@ This app must explain every sensitive Android capability before asking the user 
 
 ## App blocking: AccessibilityService
 
-The first implementation uses an explicitly user-enabled AccessibilityService to detect the current foreground package identifier and show a touchable TYPE_ACCESSIBILITY_OVERLAY when that package is on the user's local block list during a focus session.
+The explicitly user-enabled AccessibilityService detects foreground app changes and shows a touchable TYPE_ACCESSIBILITY_OVERLAY when a selected package is blocked by a running focus session, active schedule or reached daily limit.
 
-The service configuration intentionally:
-- Listens only for window-state changes.
-- Sets canRetrieveWindowContent=false.
-- Does not inspect text, view hierarchies, messages, keyboard input or gestures.
+When the user separately enables YouTube Study Mode and accepts its in-app disclosure, the same service also inspects visible YouTube accessibility-window titles. It classifies visible video titles locally:
+- Clearly educational, study-related and motivational titles can continue.
+- Known entertainment signals (for example, MrBeast, pranks, challenges, gaming, reactions and music videos) are blocked.
+- Unknown titles and screens that cannot be verified are blocked in strict mode.
+- Feed/search screens are allowed only when all detected video titles are classified as educational.
+- A verified educational YouTube video can bypass a whole-app YouTube block; daily app limits still apply.
+
+The service configuration therefore:
+- Listens for window-state, window-content-change and view-scroll events.
+- Sets canRetrieveWindowContent=true and requests view IDs / interactive windows, solely to inspect YouTube's visible title nodes when Study Mode is enabled.
+- Does not read messages, keystrokes or unrelated app content.
 - Does not prevent the user from disabling the service or uninstalling the app.
-- Stops blocking when the focus timer is no longer running.
-- Stores the selected package identifiers locally.
+- Stores selected package identifiers and Study Mode preferences locally.
+- Uses a heuristic title classifier, not video-frame/audio analysis or a guarantee of perfect semantic moderation. YouTube UI changes and device variants can cause false positives/negatives.
 
-The in-app disclosure must explain this access and require affirmative user acknowledgement before launching Android Accessibility settings.
+The first-run permission checklist verifies Accessibility, Usage Access and Notifications. Accessibility is required for app blocking; Usage Access and Notifications are optional. The in-app disclosure must accurately explain the additional YouTube title inspection and require affirmative acknowledgement before Study Mode can be enabled.
 
 ## Google Play distribution
 
