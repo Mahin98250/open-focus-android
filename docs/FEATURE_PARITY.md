@@ -16,8 +16,8 @@ The web preview is a product-design review surface. It cannot validate Android s
 | App garden | Installed-app picker, selected packages, permission disclosure and block controls | In progress | App visibility, affirmative disclosure, service enable/disable, overlay and manufacturer tests |
 | Schedules | Recurring weekdays, time windows and overnight support | In progress | Verify local-time changes, reboot, overlapping schedules, service revocation and OEM behaviour |
 | Insights | Completed focus history plus optional last-24-hour Android app usage aggregates | In progress | Verify Usage Access consent, aggregation correctness, package-name visibility, local processing and export |
-| Planner | Local tasks, priorities, routines, goals and reminders | In progress | Persistence and CRUD tests; recurrence, notifications and accessibility tests |
-| Growth & rewards | Streaks, milestones and transparent progress | Planned | Deterministic rules, time-zone edge cases and non-manipulative mechanics |
+| Planner | Local task creation, completion and deletion | In progress | Persistence and CRUD tests; priorities, routines, reminders and accessibility tests remain outstanding |
+| Growth & rewards | Streaks, milestones, weekly focus trends and transparent achievements | In progress | Deterministic rules, time-zone edge cases and non-manipulative mechanics need further verification |
 | Settings | Daily goal, privacy/about, local JSON export and confirmed local-data deletion | In progress | Verify exported JSON, complete preference deletion and onboarding restart on device; theme/motion preferences remain incomplete |
 
 ## Blocking and digital wellbeing
@@ -27,9 +27,9 @@ The web preview is a product-design review surface. It cannot validate Android s
 | Select installed launcher apps | In progress | Current picker queries launcher activities; verify device visibility and special app cases |
 | Block selected apps during a focus timer or active weekly schedule | In progress | AccessibilityService reads foreground package identifiers and presents an overlay when a focus session or recurring local schedule is active; test real devices, process death, OEM differences and user disablement |
 | YouTube Study Mode | In progress | Opt-in on-device title classification allows clearly educational/motivational videos and blocks known entertainment or unknown screens; verify YouTube view IDs, feed/search results, video navigation and false positives across real devices |
-| Recurring weekly schedules | In progress | Local weekday/time evaluator supports overnight windows; test reboot, local time changes, overlapping schedules and boundaries. Daily limits remain planned |
+| Recurring weekly schedules and daily app limits | In progress | Local weekday/time evaluator supports overnight windows; per-app daily caps use Usage Access and cached Android usage totals. Test reboot, local time changes, overlapping schedules, permission revocation and boundaries |
 | Strict sessions | In progress | Strict mode disables in-app pause/reset until the timer finishes; it cannot prevent force-stop, app-data clearing, permission removal or device restart |
-| Usage analytics | In progress | User-granted Usage Access returns local foreground-time aggregates for the last 24 hours; historical reports and limits remain planned |
+| Usage analytics | In progress | User-granted Usage Access returns local foreground-time aggregates for the last 24 hours and supports per-app daily caps; verify aggregation and enforcement on device |
 | Website filtering | Planned | A local Android VPN service requires explicit system consent; explain conflicts and local-only processing |
 | Reels / Shorts / feed controls | In progress | Quick controls now pause supported social apps (Instagram, TikTok, YouTube and Snapchat) during active focus sessions/schedules; granular in-app feed blocking is not guaranteed across third-party apps |
 | Focus completion notification | In progress | Android 13+ notification permission requested in context; inexact alarm may be delayed; verify denied permission, Doze, reboot and OEM battery policies |
