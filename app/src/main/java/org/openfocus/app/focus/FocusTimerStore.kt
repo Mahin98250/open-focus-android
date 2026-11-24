@@ -52,6 +52,11 @@ class FocusTimerStore(context: Context) {
         return FocusTimerSnapshot(false, null, storedRemaining, storedDuration, completed, storedIntention)
     }
 
+    fun clearForDataDeletion() {
+        alarmScheduler.cancel()
+        preferences.edit().clear().commit()
+    }
+
     fun isStrictModeEnabled(): Boolean = preferences.getBoolean(KEY_STRICT_MODE, false)
 
     fun setStrictModeEnabled(enabled: Boolean) {
