@@ -59,6 +59,13 @@ import org.openfocus.app.blocking.YoutubeStudyModeStore
 
 private data class LaunchableApp(val packageName: String, val label: String)
 
+private val REELS_AND_SHORTS_PACKAGES = setOf(
+    "com.instagram.android",
+    "com.zhiliaoapp.musically",
+    "com.google.android.youtube",
+    "com.snapchat.android"
+)
+
 @Composable
 fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
     val context = LocalContext.current
@@ -435,24 +442,73 @@ fun AppGardenScreen(modifier: Modifier = Modifier, onSchedules: () -> Unit) {
                     }
                 }
             }
+        } else if (blockerMode == "Reels") {
+            val supportedReelsApps = installedApps.filter { it.packageName in REELS_AND_SHORTS_PACKAGES }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("SHORT-FORM DISTRACTIONS", color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+                    Text("Pause the endless scroll.", style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold)
+                    Text(
+                        "Choose which social apps should be paused during focus sessions and active schedules. This blocks the whole app; it does not selectively hide individual Reels or Shorts inside third-party apps.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (supportedReelsApps.isEmpty()) {
+                        Text("No supported social apps were found on this device.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else {
+                        supportedReelsApps.forEach { app ->
+                            Row(
+                                Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                InstalledAppIcon(app.packageName, app.label)
+                                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                                    Text(app.label, fontWeight = FontWeight.SemiBold)
+                                    Text(
+                                        if (app.packageName in blockedPackages) "Paused during focus" else "Allowed during focus",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                Switch(
+                                    checked = app.packageName in blockedPackages,
+                                    onCheckedChange = { selected ->
+                                        store.setBlocked(app.packageName, selected)
+                                        blockedPackages = store.blockedPackages()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    Text("App blocking access must be enabled in the Apps tab. YouTube Study Mode can still allow videos classified as educational.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                }
+            }
         } else {
-            val title = if (blockerMode == "Reels") "Reels & Shorts" else "Website protection"
-            val description = if (blockerMode == "Reels")
-                "Short-form feed detection is not enabled yet. For now, add Instagram, TikTok or YouTube to your app pause list to block the whole app during focus."
-            else
-                "Website filtering needs a dedicated local VPN-based filter and Android's VPN consent. Website-by-website filtering is not active yet."
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
             ) {
                 Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                    Text(if (blockerMode == "Reels") "SHORT-FORM CONTENT" else "BROWSER CONTROL",
-                        color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
-                    Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text(description, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("BROWSER CONTROL", color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelSmall, letterSpacing = 1.3.sp)
+                    Text("Website protection", style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold)
+                    Text(
+                        "Website-by-website filtering is not active yet. It requires a local Android VPN filter and a separate system permission. No VPN is installed or enabled by this screen.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text("For now, add your browser to the Apps block list to pause it during focus sessions.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Button(onClick = { blockerMode = "Apps" }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Manage whole-app blocks")
+                        Text("Manage app blocks")
                     }
                 }
             }
