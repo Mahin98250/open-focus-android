@@ -89,6 +89,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         // Ignore our own overlay/app windows; only evaluate other foreground apps.
         if (foregroundPackage == packageName) return
 
+        var youtubeStudyContentAllowed = false
         if (youtubeStudyOverlay && foregroundPackage != YOUTUBE_PACKAGE) {
             youtubeStudyOverlay = false
             removeBlockerOverlay()
@@ -104,6 +105,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
                     detectedTitle = inspection.blockedTitle)
                 return
             }
+            youtubeStudyContentAllowed = true
             if (blockerOverlay != null && lastBlockedPackage == YOUTUBE_PACKAGE && youtubeStudyOverlay) {
                 youtubeStudyOverlay = false
                 removeBlockerOverlay()
@@ -119,7 +121,7 @@ class AppBlockingAccessibilityService : AccessibilityService() {
         val scheduleActive = scheduleStore.isBlockingNow()
         val selectedForBlocking = appBlockStore.isBlocked(foregroundPackage)
         val dailyLimitReached = dailyAppLimitStore.isLimitReached(foregroundPackage)
-        val blockedBySession = (focusActive || scheduleActive) && selectedForBlocking
+        val blockedBySession = (focusActive || scheduleActive) && selectedForBlocking && !youtubeStudyContentAllowed
         if (!blockedBySession && !dailyLimitReached) {
             // Do not dismiss an already-visible guard merely because Android reports
             // a transient launcher/system window event. The watchdog checks whether
