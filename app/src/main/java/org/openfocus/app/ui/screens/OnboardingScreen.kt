@@ -59,6 +59,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.openfocus.app.blocking.AppBlockStore
+import org.openfocus.app.focus.FocusTimerStore
 import java.util.Locale
 
 private data class WelcomePage(
@@ -176,6 +177,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             .putStringSet("focus_priorities", focusPriorities)
             .putBoolean("distraction_scan_completed", scanComplete)
             .apply()
+        FocusTimerStore(context).reset(focusMinutes * 60_000L)
         onComplete()
     }
 
@@ -238,7 +240,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                                 verticalArrangement = Arrangement.spacedBy(15.dp)
                             ) {
                                 Box(
-                                    Modifier.fillMaxWidth().height(300.dp)
+                                    Modifier.fillMaxWidth().height(250.dp)
                                         .background(
                                             Brush.verticalGradient(
                                                 listOf(Color(0xFF062B14), Color(0xFF0B351B), Color(0xFF07100A))
